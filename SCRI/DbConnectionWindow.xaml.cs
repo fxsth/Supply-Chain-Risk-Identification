@@ -1,4 +1,6 @@
-﻿using SCRI.Database;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Neo4j.Driver;
+using SCRI.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,11 +21,15 @@ namespace SCRI
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class DbConnectionWindow : Window
     {
-        public MainWindow()
+        private readonly GraphDbConnection _connection;
+
+        public DbConnectionWindow(IDisposable connection)
         {
             InitializeComponent();
+            if (connection is GraphDbConnection graphDbConnection)
+                _connection = graphDbConnection;
         }
 
         private async void onClickConnectAsync(object sender, RoutedEventArgs e)
@@ -33,12 +39,18 @@ namespace SCRI
                 lblStatus.Content = "Missing data to connect";
                 return;
             }
-            using (var con = new Neo4JConnection(txtURL.Text, txtUsername.Text, txtPassword.Text))
+
+            if (_connection.SetUpDriver(txtURL.Text, txtUsername.Text, txtPassword.Text))
             {
-                lblStatus.Content = con.connectionStatus;
-                var connecting = con.checkConnectionStatus();
-                lblStatus.Content = con.connectionStatus;
+                lblStatus.Content = _connection.connectionStatus;
+                var connecting = _connection.checkConnectionStatus();
+                lblStatus.Content = _connection.connectionStatus;
                 lblStatus.Content = await connecting;
+                if (_connection.connectionStatus == "Connected")
+                {
+                    MainWindow mainWindow = new MainWindow();
+                    mainWindow.Show();
+                }
             }
         }
     }

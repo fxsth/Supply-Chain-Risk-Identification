@@ -7,15 +7,24 @@ using Neo4j.Driver;
 
 namespace SCRI.Database
 {
-    class Neo4JConnection : IDisposable
+    public class GraphDbConnection : IDisposable
     {
-        private readonly IDriver _driver;
+        private IDriver _driver;
         public string connectionStatus { get; set; }
 
-        public Neo4JConnection(string uri, string user, string password)
+        public bool SetUpDriver(string uri, string user, string password)
         {
             connectionStatus = "Not connected";
-            _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password), o => o.WithConnectionAcquisitionTimeout(new TimeSpan(3600)));
+            try
+            {
+                _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password), o => o.WithConnectionAcquisitionTimeout(new TimeSpan(3600)));
+            }
+            catch (Exception e)
+            {
+                connectionStatus = e.Message;
+                return false;
+            }
+            return true;
         }
 
         public async Task<string> checkConnectionStatus()
