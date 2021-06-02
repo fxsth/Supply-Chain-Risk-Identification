@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Neo4j.Driver;
 using SCRI.Database;
 using System;
 using System.Data.Common;
@@ -22,10 +23,9 @@ namespace SCRI
 
         private void ConfigureServices(ServiceCollection services)
         {
-            // Startup-Window
+            services.AddSingleton<IDriverFactory, DriverFactory>();
             services.AddTransient<DbConnectionWindow>();
-            // Neo4J-Driver encapsulated and held as Singleton
-            services.AddSingleton<IDisposable, GraphDbConnection>();
+            services.AddTransient<MainWindow>();
         }
 
         protected override void OnStartup(StartupEventArgs e)

@@ -23,13 +23,16 @@ namespace SCRI
     /// </summary>
     public partial class DbConnectionWindow : Window
     {
-        private readonly GraphDbConnection _connection;
+        private DriverFactory _driverFactory;
+        private IDriver driver;
+        private IServiceProvider _serviceProvider;
 
-        public DbConnectionWindow(IDisposable connection)
+        // Simple Injection to be able to change IDrivers default config
+        public DbConnectionWindow(IServiceProvider serviceProvider,IDriverFactory driverFactory)
         {
             InitializeComponent();
-            if (connection is GraphDbConnection graphDbConnection)
-                _connection = graphDbConnection;
+            _driverFactory = driverFactory as DriverFactory;
+            _serviceProvider = serviceProvider;
         }
 
         private async void onClickConnectAsync(object sender, RoutedEventArgs e)
@@ -39,18 +42,24 @@ namespace SCRI
                 lblStatus.Content = "Missing data to connect";
                 return;
             }
-
-            if (_connection.SetUpDriver(txtURL.Text, txtUsername.Text, txtPassword.Text))
+            _driverFactory.URI = txtURL.Text;
+            _driverFactory.AuthToken = AuthTokens.Basic(txtUsername.Text, txtPassword.Text);
+            try
             {
-                lblStatus.Content = _connection.connectionStatus;
-                var connecting = _connection.checkConnectionStatus();
-                lblStatus.Content = _connection.connectionStatus;
-                lblStatus.Content = await connecting;
-                if (_connection.connectionStatus == "Connected")
+                driver = _driverFactory.CreateDriver();
+                var verifyCon = driver.VerifyConnectivityAsync();
+                lblStatus.Content = verifyCon.Status.ToString();
+                await verifyCon;
+                if (verifyCon.IsCompletedSuccessfully)
                 {
-                    MainWindow mainWindow = new MainWindow();
+                    lblStatus.Content = "Connected";
+                    MainWindow mainWindow = _serviceProvider.GetService<MainWindow>();
                     mainWindow.Show();
                 }
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Content = ex.Message;
             }
         }
     }

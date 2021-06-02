@@ -47,6 +47,8 @@ namespace SCRI.Database
             return connectionStatus;
         }
 
+        public ISession GetSession() => _driver.Session();
+
         public List<string> GetAllNodeProperties()
         {
             var session = _driver.Session();
