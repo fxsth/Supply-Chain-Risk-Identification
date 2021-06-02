@@ -24,7 +24,6 @@ namespace SCRI
     public partial class DbConnectionWindow : Window
     {
         private DriverFactory _driverFactory;
-        private IDriver driver;
         private IServiceProvider _serviceProvider;
 
         // Simple Injection to be able to change IDrivers default config
@@ -34,7 +33,7 @@ namespace SCRI
             _driverFactory = driverFactory as DriverFactory;
             _serviceProvider = serviceProvider;
         }
-
+         
         private async void onClickConnectAsync(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(txtURL.Text) || string.IsNullOrEmpty(txtUsername.Text) || string.IsNullOrEmpty(txtPassword.Text))
@@ -46,15 +45,17 @@ namespace SCRI
             _driverFactory.AuthToken = AuthTokens.Basic(txtUsername.Text, txtPassword.Text);
             try
             {
-                driver = _driverFactory.CreateDriver();
-                var verifyCon = driver.VerifyConnectivityAsync();
-                lblStatus.Content = verifyCon.Status.ToString();
-                await verifyCon;
-                if (verifyCon.IsCompletedSuccessfully)
+                using (IDriver driver = _driverFactory.CreateDriver())
                 {
-                    lblStatus.Content = "Connected";
-                    MainWindow mainWindow = _serviceProvider.GetService<MainWindow>();
-                    mainWindow.Show();
+                    var verifyCon = driver.VerifyConnectivityAsync();
+                    lblStatus.Content = verifyCon.Status.ToString();
+                    await verifyCon;
+                    if (verifyCon.IsCompletedSuccessfully)
+                    {
+                        lblStatus.Content = "Connected";
+                        MainWindow mainWindow = _serviceProvider.GetService<MainWindow>();
+                        mainWindow.Show();
+                    }
                 }
             }
             catch (Exception ex)
