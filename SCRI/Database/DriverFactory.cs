@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace SCRI.Database
 {
+    // implements IDriverFactory
     class DriverFactory : IDriverFactory
     {
         public string URI { get; set; }

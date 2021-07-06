@@ -23,6 +23,9 @@ namespace SCRI
 
         private void ConfigureServices(ServiceCollection services)
         {
+            // DriverFactory as Singleton
+            // easy driver replacement with different credentials / settings
+            // credentials / settings stored in factory
             services.AddSingleton<IDriverFactory, DriverFactory>();
             services.AddTransient<DbConnectionWindow>();
             services.AddTransient<MainWindow>();
