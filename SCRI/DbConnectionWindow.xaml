@@ -42,7 +42,7 @@
                 <TextBox Margin="10,10,10,10" x:Name="txtURL" Text="neo4j://localhost:7687"></TextBox>
                 <TextBox Margin="10,10,10,10" x:Name="txtUsername" Text="neo4j"></TextBox>
                 <TextBox Margin="10,10,10,10" x:Name="txtPassword" Text="1"/>
-                <Label x:Name="lblStatus" Margin="10,5,10,5" HorizontalAlignment="Left">Not connected</Label>
+                <TextBlock x:Name="TextBlockStatus" Margin="10,10,10,5" HorizontalAlignment="Left" Height="58" Width="279" TextWrapping="WrapWithOverflow">Not connected</TextBlock>
                 <Button x:Name="btnConnect" Margin="10,5,10,5" Click="onClickConnectAsync" >Connect</Button>
             </StackPanel>
         </Grid>

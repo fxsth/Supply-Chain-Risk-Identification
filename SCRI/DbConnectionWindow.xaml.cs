@@ -38,7 +38,7 @@ namespace SCRI
         {
             if (string.IsNullOrEmpty(txtURL.Text) || string.IsNullOrEmpty(txtUsername.Text) || string.IsNullOrEmpty(txtPassword.Text))
             {
-                lblStatus.Content = "Missing data to connect";
+                TextBlockStatus.Text = "Missing data to connect";
                 return;
             }
             _driverFactory.URI = txtURL.Text;
@@ -48,11 +48,11 @@ namespace SCRI
                 using (IDriver driver = _driverFactory.CreateDriver())
                 {
                     var verifyCon = driver.VerifyConnectivityAsync();
-                    lblStatus.Content = verifyCon.Status.ToString();
+                    TextBlockStatus.Text = verifyCon.Status.ToString();
                     await verifyCon;
                     if (verifyCon.IsCompletedSuccessfully)
                     {
-                        lblStatus.Content = "Connected";
+                        TextBlockStatus.Text = "Connected";
                         MainWindow mainWindow = _serviceProvider.GetService<MainWindow>();
                         mainWindow.Show();
                     }
@@ -60,7 +60,7 @@ namespace SCRI
             }
             catch (Exception ex)
             {
-                lblStatus.Content = ex.Message;
+                TextBlockStatus.Text = ex.Message;
             }
         }
     }
