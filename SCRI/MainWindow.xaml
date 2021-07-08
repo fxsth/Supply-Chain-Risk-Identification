@@ -5,13 +5,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:SCRI"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=Microsoft.Msagl.WpfGraphControl"
-        xmlns:graphxenums="clr-namespace:GraphX.Common.Enums;assembly=GraphX.Standard.Common"  
-        xmlns:controls1="http://schemas.panthernet.ru/graphx/"
+        xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=WpfGraphControl"
         mc:Ignorable="d"  
         d:DesignHeight="1024" d:DesignWidth="1980"
-        WindowStartupLocation="CenterScreen" WindowState="Maximized"
-        AllowsTransparency="false">
+        Title="Supply Chain Risk Identification"
+        Width="Auto" Height="Auto"
+        WindowStartupLocation="CenterScreen" WindowState="Maximized">
 
     <Window.Resources>
         <ObjectDataProvider x:Key="dataFromEnum" MethodName="GetValues"
@@ -22,15 +21,28 @@
         </ObjectDataProvider>
     </Window.Resources>
 
-    <DockPanel>
-        <ScrollViewer DockPanel.Dock="Right" Width="100">
-            <StackPanel>
+    <Grid x:Name="MainGrid" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="200"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="40" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Column="0" Grid.Row="1" ClipToBounds="true" Name="ViewGraphPanel"/>
+
+        <ScrollViewer Grid.Column="1" Grid.RowSpan="3" DockPanel.Dock="Right" Width="200">
+            <StackPanel Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}">
                 <Label Margin="10" Content="Graph Layout"/>
                 <ComboBox Margin="10" x:Name="LayoutAlgorithmComboBox"
                     Width="120"
                     ItemsSource="{Binding Source={StaticResource dataFromEnum}}" SelectionChanged="LayoutAlgorithmComboBox_SelectionChanged"/>
             </StackPanel>
         </ScrollViewer>
-        <wpfgraphcontrol:AutomaticGraphLayoutControl Background="AliceBlue" Name="graphControl" />
-    </DockPanel>
+    </Grid>
 </Window>

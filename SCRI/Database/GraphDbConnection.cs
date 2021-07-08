@@ -84,13 +84,13 @@ namespace SCRI.Database
             var suppliers = nodes.ConvertAll(
                 new Converter<IRecord, Supplier>(x => Utils.Neo4jTypeConverter.CreateSupplierFromINode(x.Values.FirstOrDefault().Value.As<INode>()))
                 );
-            Models.SupplyNetwork supplyNetwork = new();
+            Models.SupplyNetwork supplyNetwork = new SupplyNetwork();
             supplyNetwork.AddVertexRange(suppliers);
             var suppliersDict = suppliers.ToDictionary( x => x.ID, x=> x);
             foreach (var edge in edges)
             {
                 
-                var r = Utils.Neo4jTypeConverter.CreateSupplierRelationshipFromIRelationship(edge.Values["r"].As<IRelationship>(), suppliersDict[edge.Values["r"].As<IRelationship>().StartNodeId], suppliersDict[edge.Values["r"].As<IRelationship>().EndNodeId]);
+                var r = Utils.Neo4jTypeConverter.CreateSupplierRelationshipFromIRelationship(edge.Values["r"].As<IRelationship>(), suppliersDict[(int) edge.Values["r"].As<IRelationship>().StartNodeId], suppliersDict[(int) edge.Values["r"].As<IRelationship>().EndNodeId]);
                 supplyNetwork.AddEdge(r);      
             }
             return supplyNetwork;
