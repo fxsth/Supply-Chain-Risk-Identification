@@ -34,12 +34,17 @@
             <RowDefinition Height="40" />
         </Grid.RowDefinitions>
 
+        <StackPanel Orientation="Horizontal">
+            <Label Margin ="5" Content="Select Graph from Database" />
+            <ComboBox Margin ="5" Width="300" Name="GraphDatabaseCombobox" SelectionChanged="GraphDatabaseCombobox_SelectionChanged" DropDownOpened="GraphDatabaseCombobox_DropDownOpened"/>
+        </StackPanel>
+
         <DockPanel Grid.Column="0" Grid.Row="1" ClipToBounds="true" Name="ViewGraphPanel"/>
 
         <ScrollViewer Grid.Column="1" Grid.RowSpan="3" DockPanel.Dock="Right" Width="200">
             <StackPanel Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}">
                 <Label Margin="10" Content="Graph Layout"/>
-                <ComboBox Margin="10" SelectedItem="MDS" x:Name="LayoutAlgorithmComboBox"
+                <ComboBox Margin="10" x:Name="LayoutAlgorithmComboBox"
                     Width="120"
                     ItemsSource="{Binding Source={StaticResource dataFromEnum}}" SelectionChanged="LayoutAlgorithmComboBox_SelectionChanged"/>
             </StackPanel>

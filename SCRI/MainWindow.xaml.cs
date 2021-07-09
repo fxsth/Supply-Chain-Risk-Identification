@@ -19,6 +19,7 @@ using Microsoft.Msagl.Core.Routing;
 using Microsoft.Msagl.Core.Layout;
 using Microsoft.Msagl.Miscellaneous;
 using Microsoft.Msagl.Core.Geometry.Curves;
+using SCRI.Utils;
 
 namespace SCRI
 {
@@ -29,7 +30,7 @@ namespace SCRI
     {
         private DriverFactory _driverFactory;
         private IDriver driver;
-        private LayoutAlgorithm _layoutAlgorithm; 
+        private LayoutAlgorithm _layoutAlgorithm;
         private EdgeRoutingSettings _edgeRoutingSettings;
         private GraphViewer _graphViewer;
 
@@ -58,12 +59,20 @@ namespace SCRI
         private void InitialGraphVisualization()
         {
             driver = _driverFactory.CreateDriver();
-            var session = driver.Session();
-            // Get graph from 
-            var graphData= session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
-            var procedures= session.ReadTransaction(tx => CypherTransactions.GetAvailableProcedures(tx));
+            var graphData = new Models.SupplyNetwork();
+            using (var session = driver.Session())
+            {
+                GraphDatabaseCombobox.SelectedItem = session.SessionConfig.Database;
+                // Get graph from 
+                graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
+                // Check plugins
+                var procedures = session.ReadTransaction(tx => CypherTransactions.GetAvailableProcedures(tx));
+                bool apoc = Neo4jUtils.isAPOCEnabled(procedures);
+                bool gds = Neo4jUtils.isGraphDataScienceLibraryEnabled(procedures);
+            }
 
             // default layout: MDS
+            _layoutAlgorithm = LayoutAlgorithm.MDS;
             var initialLayoutSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings() { };
             var initialGraph = new Graph();
             _edgeRoutingSettings.EdgeRoutingMode = Microsoft.Msagl.Core.Routing.EdgeRoutingMode.StraightLine;
@@ -136,6 +145,32 @@ namespace SCRI
             _graphViewer.Graph.LayoutAlgorithmSettings.PackingAspectRatio = 7.8;
             _graphViewer.Graph.LayoutAlgorithmSettings.PackingMethod = PackingMethod.Compact;
             UpdateGraphLayout();
+        }
+
+        private void GraphDatabaseCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count == 0)
+                return;
+            var selectedDatabase = e.AddedItems[0].ToString();
+            using (var session = driver.Session(o => o.WithDatabase(selectedDatabase)))
+            {
+                var graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
+                var graph = new Graph() { LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings, Attr = _graphViewer.Graph.Attr };
+                foreach (var edge in graphData.Edges)
+                    graph.AddEdge(edge.Source.ID.ToString(), edge.Target.ID.ToString());
+                _graphViewer.Graph = graph;
+            }
+        }
+
+        private void GraphDatabaseCombobox_DropDownOpened(object sender, EventArgs e)
+        {
+            using (var session = driver.Session())
+            {
+                var databases = session.ReadTransaction(tx => CypherTransactions.GetDatabases(tx));
+                GraphDatabaseCombobox.Items.Clear();
+                foreach (var database in databases)
+                    GraphDatabaseCombobox.Items.Add(database);
+            }
         }
     }
 

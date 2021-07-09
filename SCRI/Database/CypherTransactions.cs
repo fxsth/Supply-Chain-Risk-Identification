@@ -57,6 +57,15 @@ namespace SCRI.Database
                 );
         }
 
+        public static List<string> GetDatabases(ITransaction tx)
+        {
+            var res = tx.Run("Show Databases");
+            var list = res.ToList();
+            return list.ConvertAll(
+                new Converter<IRecord, string>(x => x.Values.FirstOrDefault().Value.ToString())
+                );
+        }
+
         // TODO:
         // Named Graph for Graph Data Science Library
         // Transactions for GDS-Procedure-Calls

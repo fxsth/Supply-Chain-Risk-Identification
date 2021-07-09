@@ -10,12 +10,12 @@ namespace SCRI.Utils
     {
         public static bool isAPOCEnabled(IEnumerable<string> listOfProcedures)
         {
-            return listOfProcedures.Contains("apoc.");
+            return listOfProcedures.Any(str => str.Contains("apoc."));
         }
 
         public static bool isGraphDataScienceLibraryEnabled(IEnumerable<string> listOfProcedures)
         {
-            return listOfProcedures.Contains("gds.");
+            return listOfProcedures.Any(str => str.Contains("gds."));
         }
     }
 }
