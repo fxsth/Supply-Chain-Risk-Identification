@@ -18,6 +18,7 @@ using Microsoft.Msagl.WpfGraphControl;
 using Microsoft.Msagl.Core.Routing;
 using Microsoft.Msagl.Core.Layout;
 using Microsoft.Msagl.Miscellaneous;
+using Microsoft.Msagl.Core.Geometry.Curves;
 
 namespace SCRI
 {
@@ -53,11 +54,6 @@ namespace SCRI
             //ViewGraphPanel.LayoutUpdated += updateGraph;
         }
 
-        private void updateGraph(object sender, EventArgs e)
-        {
-            LoadAndVisualizeGraph();
-        }
-
         private void LoadAndVisualizeGraph()
         {
             driver = _driverFactory.CreateDriver();
@@ -84,6 +80,7 @@ namespace SCRI
         private void updateMSAGLLayout()
         {
             LayoutHelpers.CalculateLayout(_graphViewer.Graph.GeometryGraph, _graphViewer.Graph.LayoutAlgorithmSettings, null);
+            _graphViewer.Graph = _graphViewer.Graph;
         }
 
         private void LayoutAlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
