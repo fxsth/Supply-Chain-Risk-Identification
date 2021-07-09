@@ -39,10 +39,12 @@
         <ScrollViewer Grid.Column="1" Grid.RowSpan="3" DockPanel.Dock="Right" Width="200">
             <StackPanel Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}">
                 <Label Margin="10" Content="Graph Layout"/>
-                <ComboBox Margin="10" x:Name="LayoutAlgorithmComboBox"
+                <ComboBox Margin="10" SelectedItem="MDS" x:Name="LayoutAlgorithmComboBox"
                     Width="120"
                     ItemsSource="{Binding Source={StaticResource dataFromEnum}}" SelectionChanged="LayoutAlgorithmComboBox_SelectionChanged"/>
             </StackPanel>
         </ScrollViewer>
+
+        <Label Grid.Column="0" Grid.Row="2" Name="CurrentStatusLabel">Status</Label>
     </Grid>
 </Window>
