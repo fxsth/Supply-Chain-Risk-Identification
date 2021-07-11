@@ -66,6 +66,25 @@ namespace SCRI.Database
                 );
         }
 
+        public static DbSchema GetDatabaseSchema(ITransaction tx)
+        {
+            var res = tx.Run("call db.schema.visualization()");
+            var list = res.ToList();
+            var nodesDictionary = list.First().Values["nodes"].As<IEnumerable<INode>>().ToDictionary(x => x.Id);
+            var edges = list.First().Values["relationships"].As<IEnumerable<IRelationship>>();
+            var schema = new DbSchema();
+            foreach (var edge in edges)
+            {
+                schema.AddEdgeTypeBetweenTwoNodes(
+                   nodesDictionary[edge.StartNodeId].Labels.First(),
+                   nodesDictionary[edge.EndNodeId].Labels.First(),
+                   edge.Type
+                );
+            }
+            return schema;
+        }
+
+
         // TODO:
         // Named Graph for Graph Data Science Library
         // Transactions for GDS-Procedure-Calls

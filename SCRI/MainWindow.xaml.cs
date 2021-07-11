@@ -20,6 +20,7 @@ using Microsoft.Msagl.Core.Layout;
 using Microsoft.Msagl.Miscellaneous;
 using Microsoft.Msagl.Core.Geometry.Curves;
 using SCRI.Utils;
+using SCRI.Models;
 
 namespace SCRI
 {
@@ -60,15 +61,20 @@ namespace SCRI
         {
             driver = _driverFactory.CreateDriver();
             var graphData = new Models.SupplyNetwork();
+            var dbSchema = new DbSchema();
+            var graphViewerSettings = new GraphViewerSettings();
             using (var session = driver.Session())
             {
                 GraphDatabaseCombobox.SelectedItem = session.SessionConfig.Database;
-                // Get graph from 
+                // Get graph from db
                 graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
                 // Check plugins
                 var procedures = session.ReadTransaction(tx => CypherTransactions.GetAvailableProcedures(tx));
                 bool apoc = Neo4jUtils.isAPOCEnabled(procedures);
                 bool gds = Neo4jUtils.isGraphDataScienceLibraryEnabled(procedures);
+                // retrieve schema
+                dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
+                graphViewerSettings.AssignColorsToLabels(dbSchema.getUniqueNodeLabels());
             }
 
             // default layout: MDS
@@ -80,7 +86,13 @@ namespace SCRI
             initialLayoutSettings.PackingMethod = Microsoft.Msagl.Core.Layout.PackingMethod.Compact;
             initialGraph.LayoutAlgorithmSettings = initialLayoutSettings;
             foreach (var edge in graphData.Edges)
-                initialGraph.AddEdge(edge.Source.ID.ToString(), edge.Target.ID.ToString());
+            {
+                var n1 = initialGraph.AddNode(edge.Source.ID.ToString());
+                n1.Attr.FillColor = graphViewerSettings.GetLabelColor(edge.Source.Label.First());
+                var n2 = initialGraph.AddNode(edge.Target.ID.ToString());
+                n2.Attr.FillColor = graphViewerSettings.GetLabelColor(edge.Target.Label.First());
+                var e = initialGraph.AddEdge(n1.Id, n2.Id);
+            }
 
             initialGraph.Attr.LayerDirection = LayerDirection.LR;
             initialGraph.Attr.BackgroundColor = Microsoft.Msagl.Drawing.Color.Transparent;
@@ -113,7 +125,7 @@ namespace SCRI
             {
                 case LayoutAlgorithm.FastIncremental:
                     _graphViewer.Graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Incremental.FastIncrementalLayoutSettings()
-                    {
+                    { 
                         EdgeRoutingSettings = _edgeRoutingSettings
                     };
                     break;
