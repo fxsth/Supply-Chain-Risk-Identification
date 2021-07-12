@@ -25,7 +25,7 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
@@ -41,12 +41,26 @@
 
         <DockPanel Grid.Column="0" Grid.Row="1" ClipToBounds="true" Name="ViewGraphPanel"/>
 
-        <ScrollViewer Grid.Column="1" Grid.RowSpan="3" DockPanel.Dock="Right" Width="200">
+        <ScrollViewer Grid.Column="1" Grid.RowSpan="3" DockPanel.Dock="Right">
             <StackPanel Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}">
                 <Label Margin="10" Content="Graph Layout"/>
                 <ComboBox Margin="10" x:Name="LayoutAlgorithmComboBox"
                     Width="120"
                     ItemsSource="{Binding Source={StaticResource dataFromEnum}}" SelectionChanged="LayoutAlgorithmComboBox_SelectionChanged"/>
+                <ItemsControl Name="NodePropertiesItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="5,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock FontSize="16" Text="{Binding Key}"/>
+                                <TextBlock FontSize="16" Grid.Column="1" Text="{Binding Value}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </ScrollViewer>
 

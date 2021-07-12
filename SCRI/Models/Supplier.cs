@@ -15,6 +15,17 @@ namespace SCRI.Models
         public IReadOnlyList<string> Label { get; set; }
         public Dictionary<string, string> Properties { get; set; }
         public int ID { get; }
-        public override string ToString() => Label.FirstOrDefault() + " " + ID;
+        public override string ToString()
+        {
+            string nodeText;
+            var properties = Properties.Keys.AsEnumerable();
+            if (properties.Any(x => x.Contains("name", System.StringComparison.OrdinalIgnoreCase)))
+                nodeText = Properties.Where(x => x.Key.Contains("name", System.StringComparison.OrdinalIgnoreCase)).Select(x => x.Value).FirstOrDefault();
+            else if (properties.Any(x => x.Contains("title", System.StringComparison.OrdinalIgnoreCase)))
+                nodeText = Properties.Where(x => x.Key.Contains("title", System.StringComparison.OrdinalIgnoreCase)).Select(x => x.Value).FirstOrDefault();
+            else
+                nodeText = Label.FirstOrDefault() + " " + ID;
+            return nodeText;
+        }
     }
 }

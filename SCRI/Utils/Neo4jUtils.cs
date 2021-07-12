@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SCRI.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +17,11 @@ namespace SCRI.Utils
         public static bool isGraphDataScienceLibraryEnabled(IEnumerable<string> listOfProcedures)
         {
             return listOfProcedures.Any(str => str.Contains("gds."));
+        }
+
+        public static Dictionary<int, Dictionary<string, string>> GetGraphPropertiesAndValues(SupplyNetwork supplyNetwork)
+        {
+            return supplyNetwork.Vertices.ToDictionary(x => x.ID, x => x.Properties);
         }
     }
 }

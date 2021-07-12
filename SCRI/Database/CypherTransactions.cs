@@ -61,9 +61,11 @@ namespace SCRI.Database
         {
             var res = tx.Run("Show Databases");
             var list = res.ToList();
-            return list.ConvertAll(
+            var databases = list.ConvertAll(
                 new Converter<IRecord, string>(x => x.Values.FirstOrDefault().Value.ToString())
                 );
+            databases.Remove("system");
+            return databases;
         }
 
         public static DbSchema GetDatabaseSchema(ITransaction tx)
@@ -85,9 +87,66 @@ namespace SCRI.Database
         }
 
 
+        public static string CreateGraphProjection(ITransaction tx, string graphProjection)
+        {
+            var res = tx.Run(@"CALL gds.graph.create('$graphProjection', '*', '*')
+                                YIELD createdGraphProjection;", graphProjection);
+            return res.Peek().Values.First().Value.ToString();
+        }
+
+        public static IEnumerable<string> GetGraphProjections(ITransaction tx)
+        {
+            var res = tx.Run("CALL gds.graph.list");
+            return res.ToList().ConvertAll(
+                new Converter<IRecord, string>(x => x.Values["graphName"].ToString())
+                ); ;
+        }
+
+        public static Dictionary<int, double> GetDegreeCentralityAsStream(ITransaction tx, string graphProjection)
+        {
+            var res = tx.Run(@"CALL gds.alpha.degree.stream('$graphProjection')
+                            YIELD nodeId, score
+                            RETURN nodeId, score", graphProjection);
+            return res.ToDictionary(x => x.Values["nodeId"].As<int>(), x => x.Values["score"].As<double>());
+        }
+
+        public static Dictionary<int, double> GetDegreeCentralityAsStream(ITransaction tx)
+        {
+            var res = tx.Run(@"CALL gds.alpha.degree.stream({nodeProjection: '*', relationshipProjection: '*'})
+                            YIELD nodeId, score
+                            RETURN nodeId, score");
+            return res.ToDictionary(x => x.Values["nodeId"].As<int>(), x => x.Values["score"].As<double>());
+        }
+
+        public static void WriteDegreeCentralityToProperty(ITransaction tx)
+        {
+            tx.Run("CALL gds.alpha.degree.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'degree'})");
+        }
+
+        public static void WriteBetweennessCentralityToProperty(ITransaction tx)
+        {
+            tx.Run("CALL gds.betweenness.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'betweenness'})");
+        }
+
+        public static void WriteClosenessCentralityToProperty(ITransaction tx)
+        {
+            tx.Run("CALL gds.alpha.closeness.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'closeness'})");
+        }
+
+        public static object WriteCentralityMeasuresToProperty(ITransaction tx)
+        {
+            WriteDegreeCentralityToProperty(tx);
+            WriteBetweennessCentralityToProperty(tx);
+            WriteClosenessCentralityToProperty(tx);
+            return null;
+        }
+
+
+
+
+
         // TODO:
         // Named Graph for Graph Data Science Library
         // Transactions for GDS-Procedure-Calls
-        // Transaction retrieving scheme
     }
 }

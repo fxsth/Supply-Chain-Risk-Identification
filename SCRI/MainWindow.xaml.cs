@@ -34,6 +34,9 @@ namespace SCRI
         private LayoutAlgorithm _layoutAlgorithm;
         private EdgeRoutingSettings _edgeRoutingSettings;
         private GraphViewer _graphViewer;
+        private GraphViewerSettings graphViewerSettings = new GraphViewerSettings();
+        private SupplyNetwork graphData;
+        private Dictionary<int, Dictionary<string, string>> NodePropertiesAndValues;
 
 
 
@@ -52,6 +55,7 @@ namespace SCRI
 
             _graphViewer.LayoutStarted += OnLayoutStarted;
             _graphViewer.LayoutComplete += OnLayoutComplete;
+            _graphViewer.ObjectUnderMouseCursorChanged += OnObjectUnderMouseCursorChanged;
 
             InitialGraphVisualization();
             //ViewGraphPanel.LayoutUpdated += updateGraph;
@@ -60,9 +64,7 @@ namespace SCRI
         private void InitialGraphVisualization()
         {
             driver = _driverFactory.CreateDriver();
-            var graphData = new Models.SupplyNetwork();
-            var dbSchema = new DbSchema();
-            var graphViewerSettings = new GraphViewerSettings();
+            Graph initialGraph = new Graph();
             using (var session = driver.Session())
             {
                 GraphDatabaseCombobox.SelectedItem = session.SessionConfig.Database;
@@ -72,33 +74,28 @@ namespace SCRI
                 var procedures = session.ReadTransaction(tx => CypherTransactions.GetAvailableProcedures(tx));
                 bool apoc = Neo4jUtils.isAPOCEnabled(procedures);
                 bool gds = Neo4jUtils.isGraphDataScienceLibraryEnabled(procedures);
+                // Execute Centrality Algorithms and write results to graph properties
+                session.WriteTransaction<object>(tx => CypherTransactions.WriteCentralityMeasuresToProperty(tx));
                 // retrieve schema
-                dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
-                graphViewerSettings.AssignColorsToLabels(dbSchema.getUniqueNodeLabels());
+                var dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
+                initialGraph = graphViewerSettings.GetGraph(graphData, dbSchema);
+                NodePropertiesAndValues = Neo4jUtils.GetGraphPropertiesAndValues(graphData);
             }
 
             // default layout: MDS
             _layoutAlgorithm = LayoutAlgorithm.MDS;
             var initialLayoutSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings() { };
-            var initialGraph = new Graph();
             _edgeRoutingSettings.EdgeRoutingMode = Microsoft.Msagl.Core.Routing.EdgeRoutingMode.StraightLine;
             initialLayoutSettings.PackingAspectRatio = 7.8;
             initialLayoutSettings.PackingMethod = Microsoft.Msagl.Core.Layout.PackingMethod.Compact;
             initialGraph.LayoutAlgorithmSettings = initialLayoutSettings;
-            foreach (var edge in graphData.Edges)
-            {
-                var n1 = initialGraph.AddNode(edge.Source.ID.ToString());
-                n1.Attr.FillColor = graphViewerSettings.GetLabelColor(edge.Source.Label.First());
-                var n2 = initialGraph.AddNode(edge.Target.ID.ToString());
-                n2.Attr.FillColor = graphViewerSettings.GetLabelColor(edge.Target.Label.First());
-                var e = initialGraph.AddEdge(n1.Id, n2.Id);
-            }
 
             initialGraph.Attr.LayerDirection = LayerDirection.LR;
             initialGraph.Attr.BackgroundColor = Microsoft.Msagl.Drawing.Color.Transparent;
             initialGraph.Attr.Color = Microsoft.Msagl.Drawing.Color.Transparent;
 
             _graphViewer.Graph = initialGraph;
+
         }
 
         private void UpdateGraphLayout()
@@ -116,6 +113,16 @@ namespace SCRI
         private void OnLayoutStarted(object sender, EventArgs e)
         {
             CurrentStatusLabel.Content = "Calculating Graph Layout...";
+        }
+
+        private void OnObjectUnderMouseCursorChanged(object sender, EventArgs e)
+        {
+            var viewerObject = e.As<ObjectUnderMouseCursorChangedEventArgs>().NewObject ;
+            if(viewerObject != null && viewerObject.DrawingObject is Microsoft.Msagl.Drawing.Node)
+            {
+                var id = Convert.ToInt32(viewerObject.DrawingObject.As<Microsoft.Msagl.Drawing.Node>().Id);
+                NodePropertiesItemsControl.ItemsSource = NodePropertiesAndValues[id];
+            }
         }
 
         private async void LayoutAlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -166,11 +173,15 @@ namespace SCRI
             var selectedDatabase = e.AddedItems[0].ToString();
             using (var session = driver.Session(o => o.WithDatabase(selectedDatabase)))
             {
-                var graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
-                var graph = new Graph() { LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings, Attr = _graphViewer.Graph.Attr };
-                foreach (var edge in graphData.Edges)
-                    graph.AddEdge(edge.Source.ID.ToString(), edge.Target.ID.ToString());
+                session.WriteTransaction<object>(tx => CypherTransactions.WriteCentralityMeasuresToProperty(tx));
+                graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
+                var dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
+                var graph = graphViewerSettings.GetGraph(graphData, dbSchema);
+                graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
+                graph.Attr = _graphViewer.Graph.Attr;
                 _graphViewer.Graph = graph;
+                NodePropertiesAndValues = Neo4jUtils.GetGraphPropertiesAndValues(graphData);
+                NodePropertiesItemsControl.ItemsSource = NodePropertiesAndValues.First().Value;
             }
         }
 
