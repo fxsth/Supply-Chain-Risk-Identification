@@ -68,6 +68,13 @@ namespace SCRI.Database
             return databases;
         }
 
+        public static string GetDefaultDatabase(ITransaction tx)
+        {
+            var res = tx.Run("Show Default Database");
+            var list = res.ToList();
+            return list.Single().Values.FirstOrDefault().Value.ToString();
+        }
+
         public static DbSchema GetDatabaseSchema(ITransaction tx)
         {
             var res = tx.Run("call db.schema.visualization()");

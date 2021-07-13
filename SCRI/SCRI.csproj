@@ -7,9 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutomaticGraphLayout" Version="1.1.11" />
-    <PackageReference Include="AutomaticGraphLayout.Drawing" Version="1.1.11" />
-    <PackageReference Include="Domemtech.AutomaticGraphLayout.WpfGraphControl" Version="1.1.4" />
+    <PackageReference Include="AutomaticGraphLayout" Version="1.1.12" />
+    <PackageReference Include="AutomaticGraphLayout.Drawing" Version="1.1.12" />
     <PackageReference Include="Microsoft.Build.Framework" Version="16.10.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
@@ -21,6 +20,12 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Msagl.WpfGraphControl">
+      <HintPath>..\..\automatic-graph-layout\GraphLayout\tools\WpfGraphControl\bin\Debug\netcoreapp3.1\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

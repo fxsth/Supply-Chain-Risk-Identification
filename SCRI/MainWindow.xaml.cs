@@ -31,12 +31,13 @@ namespace SCRI
     {
         private DriverFactory _driverFactory;
         private IDriver driver;
-        private LayoutAlgorithm _layoutAlgorithm;
-        private EdgeRoutingSettings _edgeRoutingSettings;
         private GraphViewer _graphViewer;
         private GraphViewerSettings graphViewerSettings = new GraphViewerSettings();
         private SupplyNetwork graphData;
         private Dictionary<int, Dictionary<string, string>> NodePropertiesAndValues;
+
+        private EdgeRoutingSettings selectedEdgeRoutingSettings;
+        public LayoutAlgorithm selectedLayoutAlgorithm;
 
 
 
@@ -51,7 +52,7 @@ namespace SCRI
             _graphViewer = new GraphViewer();
             _graphViewer.RunLayoutAsync = true;
             _graphViewer.BindToPanel(ViewGraphPanel);
-            _edgeRoutingSettings = new EdgeRoutingSettings();
+            selectedEdgeRoutingSettings = new EdgeRoutingSettings();
 
             _graphViewer.LayoutStarted += OnLayoutStarted;
             _graphViewer.LayoutComplete += OnLayoutComplete;
@@ -67,7 +68,7 @@ namespace SCRI
             Graph initialGraph = new Graph();
             using (var session = driver.Session())
             {
-                GraphDatabaseCombobox.SelectedItem = session.SessionConfig.Database;
+                GraphDatabaseCombobox.Text = session.ReadTransaction(tx => CypherTransactions.GetDefaultDatabase(tx));
                 // Get graph from db
                 graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
                 // Check plugins
@@ -83,9 +84,10 @@ namespace SCRI
             }
 
             // default layout: MDS
-            _layoutAlgorithm = LayoutAlgorithm.MDS;
+            selectedLayoutAlgorithm = LayoutAlgorithm.MDS;
+            LayoutAlgorithmComboBox.Text = selectedLayoutAlgorithm.ToString();
             var initialLayoutSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings() { };
-            _edgeRoutingSettings.EdgeRoutingMode = Microsoft.Msagl.Core.Routing.EdgeRoutingMode.StraightLine;
+            selectedEdgeRoutingSettings.EdgeRoutingMode = Microsoft.Msagl.Core.Routing.EdgeRoutingMode.Spline;
             initialLayoutSettings.PackingAspectRatio = 7.8;
             initialLayoutSettings.PackingMethod = Microsoft.Msagl.Core.Layout.PackingMethod.Compact;
             initialGraph.LayoutAlgorithmSettings = initialLayoutSettings;
@@ -96,14 +98,15 @@ namespace SCRI
 
             _graphViewer.Graph = initialGraph;
 
+            NodeSizeDependenceComboBox.ItemsSource = GeneralUtils.enumToStringList(typeof(GraphViewerSettings.NodeSizeDependsOn));
         }
 
-        private void UpdateGraphLayout()
+        private void UpdateGraphLayout(Graph graph)
         {
             // recalculate graph layout
-            LayoutHelpers.CalculateLayout(_graphViewer.Graph.GeometryGraph, _graphViewer.Graph.LayoutAlgorithmSettings, null);
+            LayoutHelpers.CalculateLayout(graph.GeometryGraph, graph.LayoutAlgorithmSettings, null);
             // and update visuals
-            _graphViewer.Graph = _graphViewer.Graph;
+            _graphViewer.Graph = graph;
         }
 
         private void OnLayoutComplete(object sender, EventArgs e)
@@ -127,34 +130,37 @@ namespace SCRI
 
         private async void LayoutAlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            _layoutAlgorithm = e.AddedItems[0].As<LayoutAlgorithm>();
-            switch (_layoutAlgorithm)
+            if (_graphViewer == null || _graphViewer.Graph == null || e.AddedItems.Count<1)
+                return;
+            Graph graph = _graphViewer.Graph;
+            selectedLayoutAlgorithm = e.AddedItems[0].As<LayoutAlgorithm>();
+            switch (selectedLayoutAlgorithm)
             {
                 case LayoutAlgorithm.FastIncremental:
-                    _graphViewer.Graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Incremental.FastIncrementalLayoutSettings()
+                    graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Incremental.FastIncrementalLayoutSettings()
                     { 
-                        EdgeRoutingSettings = _edgeRoutingSettings
+                        EdgeRoutingSettings = selectedEdgeRoutingSettings
                     };
                     break;
                 case LayoutAlgorithm.LargeGraph:
                     //_layoutAlgorithmSettings = new Microsoft.Msagl.Layout.LargeGraphLayout.LgLayoutSettings()  { EdgeRoutingSettings = _edgeRoutingSettings};
                     break;
                 case LayoutAlgorithm.Sugiyama:
-                    _graphViewer.Graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings()
+                    graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings()
                     {
-                        EdgeRoutingSettings = _edgeRoutingSettings
+                        EdgeRoutingSettings = selectedEdgeRoutingSettings
                     };
                     break;
                 case LayoutAlgorithm.MDS:
-                    _graphViewer.Graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings()
+                    graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings()
                     {
-                        EdgeRoutingSettings = _edgeRoutingSettings
+                        EdgeRoutingSettings = selectedEdgeRoutingSettings
                     };
                     break;
                 case LayoutAlgorithm.Ranking:
-                    _graphViewer.Graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Prototype.Ranking.RankingLayoutSettings()
+                    graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Prototype.Ranking.RankingLayoutSettings()
                     {
-                        EdgeRoutingSettings = _edgeRoutingSettings
+                        EdgeRoutingSettings = selectedEdgeRoutingSettings
                     };
                     break;
                 default:
@@ -163,7 +169,7 @@ namespace SCRI
 
             _graphViewer.Graph.LayoutAlgorithmSettings.PackingAspectRatio = 7.8;
             _graphViewer.Graph.LayoutAlgorithmSettings.PackingMethod = PackingMethod.Compact;
-            UpdateGraphLayout();
+            UpdateGraphLayout(graph);
         }
 
         private void GraphDatabaseCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -194,6 +200,15 @@ namespace SCRI
                 foreach (var database in databases)
                     GraphDatabaseCombobox.Items.Add(database);
             }
+        }
+
+        private void NodeSizeDependenceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count == 0)
+                return;
+            Enum.TryParse(e.AddedItems[0].ToString(), out GraphViewerSettings.NodeSizeDependsOn nodeSizeDependence);
+            graphViewerSettings.selectedNodeSizeDependence = nodeSizeDependence;
+            _graphViewer.Graph = _graphViewer.Graph;
         }
     }
 
