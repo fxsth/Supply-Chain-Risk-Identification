@@ -42,7 +42,11 @@ namespace SCRI.Database
             foreach (var edge in edges)
             {
 
-                var r = Utils.Neo4jTypeConverter.CreateSupplierRelationshipFromIRelationship(edge.Values["r"].As<IRelationship>(), suppliersDict[(int)edge.Values["r"].As<IRelationship>().StartNodeId], suppliersDict[(int)edge.Values["r"].As<IRelationship>().EndNodeId]);
+                var r = Utils.Neo4jTypeConverter.CreateSupplierRelationshipFromIRelationship(
+                    edge.Values["r"].As<IRelationship>(),
+                    suppliersDict[(int)edge.Values["r"].As<IRelationship>().StartNodeId],
+                    suppliersDict[(int)edge.Values["r"].As<IRelationship>().EndNodeId]
+                    );
                 supplyNetwork.AddEdge(r);
             }
             return supplyNetwork;
@@ -90,6 +94,7 @@ namespace SCRI.Database
                    edge.Type
                 );
             }
+            schema.AddLooseNodeTypes(nodesDictionary.Values.Select(x => x.Labels.FirstOrDefault()).Distinct());
             return schema;
         }
 
@@ -147,13 +152,5 @@ namespace SCRI.Database
             WriteClosenessCentralityToProperty(tx);
             return null;
         }
-
-
-
-
-
-        // TODO:
-        // Named Graph for Graph Data Science Library
-        // Transactions for GDS-Procedure-Calls
     }
 }

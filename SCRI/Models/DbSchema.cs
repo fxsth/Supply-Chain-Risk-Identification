@@ -7,17 +7,32 @@ using System.Threading.Tasks;
 namespace SCRI.Models
 {
     /// <summary>
-    /// Stores a Schema from Neo4j as edge types between node types (labels)
+    /// Stores a Schema from Neo4j as edge types between node types (labels) and loose node types
     /// </summary>
     public class DbSchema
     {
-        public List<EdgeTypeBetweenTwoNodes> Schema { get; set; }
+        private List<EdgeTypeBetweenTwoNodes> _connectedEdgeAndNodeTypes { get; set; }
+        private List<string> _looseNodeTypes { get; set; }
+
+        public DbSchema()
+        {
+            _connectedEdgeAndNodeTypes = new List<EdgeTypeBetweenTwoNodes>();
+            _looseNodeTypes = new List<string>();
+        }
+
+        public void AddLooseNodeType(string nodeLabel)
+        {
+            _looseNodeTypes.Add(nodeLabel);
+        }
+
+        public void AddLooseNodeTypes(IEnumerable<string> nodeLabels)
+        {
+            _looseNodeTypes.AddRange(nodeLabels);
+        }
 
         public void AddEdgeTypeBetweenTwoNodes(string sourceNodeLabel, string targetNodeLabel, string edgeType)
         {
-            if (Schema == null)
-                Schema = new List<EdgeTypeBetweenTwoNodes>();
-            Schema.Add(new EdgeTypeBetweenTwoNodes()
+            _connectedEdgeAndNodeTypes.Add(new EdgeTypeBetweenTwoNodes()
             {
                 SourceNodeLabel = sourceNodeLabel,
                 TargetNodeLabel = targetNodeLabel,
@@ -25,20 +40,23 @@ namespace SCRI.Models
             });
         }
 
-        public IEnumerable<string> getUniqueNodeLabels()
+        public IEnumerable<string> GetUniqueNodeLabels()
         {
-            return Schema.SelectMany(x => new[] { x.SourceNodeLabel, x.TargetNodeLabel }).Distinct();
+            return _connectedEdgeAndNodeTypes
+                .SelectMany(x => new[] { x.SourceNodeLabel, x.TargetNodeLabel })
+                .Union(_looseNodeTypes)
+                .Distinct()
+                .Where(s => !string.IsNullOrEmpty(s));
         }
 
-        public IEnumerable<string> getUniqueEdgeTypes()
+        public IEnumerable<string> GetUniqueEdgeTypes()
         {
-            return Schema.Select(x => x.EdgeType).Distinct();
+            return _connectedEdgeAndNodeTypes.Select(x => x.EdgeType).Distinct().Where(s => !string.IsNullOrEmpty(s));
         }
 
         /// <summary>
         /// Class that represent a data structure like: NodeLabel-[EdgeType]->NodeLabel
         /// </summary>
-
         public class EdgeTypeBetweenTwoNodes
         {
             public string SourceNodeLabel { get; set; }

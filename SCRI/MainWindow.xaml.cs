@@ -1,16 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using Neo4j.Driver;
 using SCRI.Database;
 using Microsoft.Msagl.Drawing;
@@ -18,7 +10,6 @@ using Microsoft.Msagl.WpfGraphControl;
 using Microsoft.Msagl.Core.Routing;
 using Microsoft.Msagl.Core.Layout;
 using Microsoft.Msagl.Miscellaneous;
-using Microsoft.Msagl.Core.Geometry.Curves;
 using SCRI.Utils;
 using SCRI.Models;
 
@@ -68,7 +59,6 @@ namespace SCRI
             Graph initialGraph = new Graph();
             using (var session = driver.Session())
             {
-                GraphDatabaseCombobox.Text = session.ReadTransaction(tx => CypherTransactions.GetDefaultDatabase(tx));
                 // Get graph from db
                 graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
                 // Check plugins
@@ -81,6 +71,10 @@ namespace SCRI
                 var dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
                 initialGraph = graphViewerSettings.GetGraph(graphData, dbSchema);
                 NodePropertiesAndValues = Neo4jUtils.GetGraphPropertiesAndValues(graphData);
+                var databases = session.ReadTransaction(tx => CypherTransactions.GetDatabases(tx));
+                GraphDatabaseCombobox.ItemsSource = databases;
+                GraphDatabaseCombobox.Text = session.ReadTransaction(tx => CypherTransactions.GetDefaultDatabase(tx));
+
             }
 
             // default layout: MDS
@@ -99,6 +93,7 @@ namespace SCRI
             _graphViewer.Graph = initialGraph;
 
             NodeSizeDependenceComboBox.ItemsSource = GeneralUtils.enumToStringList(typeof(GraphViewerSettings.NodeSizeDependsOn));
+            NodeSizeDependenceComboBox.Text = graphViewerSettings.selectedNodeSizeDependence.ToString();
         }
 
         private void UpdateGraphLayout(Graph graph)
@@ -125,6 +120,10 @@ namespace SCRI
             {
                 var id = Convert.ToInt32(viewerObject.DrawingObject.As<Microsoft.Msagl.Drawing.Node>().Id);
                 NodePropertiesItemsControl.ItemsSource = NodePropertiesAndValues[id];
+            }
+            else
+            {
+                NodePropertiesItemsControl.ItemsSource = null;
             }
         }
 
@@ -174,7 +173,7 @@ namespace SCRI
 
         private void GraphDatabaseCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count == 0)
+            if (e.AddedItems.Count == 0 || _graphViewer is null || _graphViewer.Graph is null)
                 return;
             var selectedDatabase = e.AddedItems[0].ToString();
             using (var session = driver.Session(o => o.WithDatabase(selectedDatabase)))
@@ -196,9 +195,7 @@ namespace SCRI
             using (var session = driver.Session())
             {
                 var databases = session.ReadTransaction(tx => CypherTransactions.GetDatabases(tx));
-                GraphDatabaseCombobox.Items.Clear();
-                foreach (var database in databases)
-                    GraphDatabaseCombobox.Items.Add(database);
+                GraphDatabaseCombobox.ItemsSource = databases;
             }
         }
 
