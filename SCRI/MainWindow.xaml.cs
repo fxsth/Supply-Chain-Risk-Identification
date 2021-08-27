@@ -13,6 +13,7 @@ using Microsoft.Msagl.Miscellaneous;
 using SCRI.Utils;
 using SCRI.Models;
 using SCRI.Services;
+using System.Threading.Tasks;
 
 namespace SCRI
 {
@@ -38,7 +39,7 @@ namespace SCRI
             _graphViewerSettings = _graphDbAccessor.CreateGraphViewerSettings();
             Loaded += MainWindow_Loaded;
         }
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             _graphViewer = new GraphViewer();
             _graphViewer.RunLayoutAsync = true;
@@ -49,13 +50,13 @@ namespace SCRI
             _graphViewer.LayoutComplete += OnLayoutComplete;
             _graphViewer.ObjectUnderMouseCursorChanged += OnObjectUnderMouseCursorChanged;
 
-            InitialGraphVisualization();
+            await InitialGraphVisualization();
             //ViewGraphPanel.LayoutUpdated += updateGraph;
         }
 
-        private void InitialGraphVisualization()
+        private async Task InitialGraphVisualization()
         {
-            _graphDbAccessor.Init();
+            await _graphDbAccessor.Init();
             Graph initialGraph = _graphViewerSettings.GetDefaultMSAGLGraph();
             NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(_graphDbAccessor.GetDefaultGraph());
             GraphDatabaseCombobox.ItemsSource = _graphDbAccessor.GetAvailableGraphs();
@@ -155,12 +156,12 @@ namespace SCRI
             UpdateGraphLayout(graph);
         }
 
-        private void GraphDatabaseCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void GraphDatabaseCombobox_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count == 0 || _graphViewer is null || _graphViewer.Graph is null)
                 return;
             var selectedDatabase = e.AddedItems[0].ToString();
-            _graphDbAccessor.RetrieveGraphFromDatabase(selectedDatabase);
+            await _graphDbAccessor.RetrieveGraphFromDatabase(selectedDatabase);
             var graph = _graphViewerSettings.GetMSAGLGraph(selectedDatabase);
             graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
             graph.Attr = _graphViewer.Graph.Attr;

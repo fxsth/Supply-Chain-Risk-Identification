@@ -35,7 +35,7 @@
 
         <StackPanel Orientation="Horizontal">
             <Label Margin ="5" Content="Select Graph from Database" />
-            <ComboBox Margin ="5" Width="300" Name="GraphDatabaseCombobox" SelectionChanged="GraphDatabaseCombobox_SelectionChanged" DropDownOpened="GraphDatabaseCombobox_DropDownOpened"/>
+            <ComboBox Margin ="5" Width="300" Name="GraphDatabaseCombobox" SelectionChanged="GraphDatabaseCombobox_SelectionChangedAsync" DropDownOpened="GraphDatabaseCombobox_DropDownOpened"/>
         </StackPanel>
 
         <DockPanel Grid.Column="0" Grid.Row="1" ClipToBounds="true" Name="ViewGraphPanel"/>

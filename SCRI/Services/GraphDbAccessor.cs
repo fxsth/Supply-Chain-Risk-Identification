@@ -27,13 +27,13 @@ namespace SCRI.Services
 
         public async Task Init()
         {
-            using (var session = _driver.Session())
+            using (var session = _driver.AsyncSession())
             {
                 // get available graphs
-                var availableDatabases = session.ReadTransaction(tx => CypherTransactions.GetDatabases(tx));
+                var availableDatabases = await session.ReadTransactionAsync(tx => CypherTransactions.GetDatabasesAsync(tx));
                 _graphStore.AnnounceAvailableGraphs(availableDatabases);
                 // default database for initial display
-                _graphStore.defaultGraph = session.ReadTransaction(tx => CypherTransactions.GetDefaultDatabase(tx));
+                _graphStore.defaultGraph = await session.ReadTransactionAsync(tx => CypherTransactions.GetDefaultDatabaseAsync(tx));
                 await RetrieveGraphFromDatabase(_graphStore.defaultGraph);
             }
         }
@@ -54,15 +54,17 @@ namespace SCRI.Services
         {
             if (!_graphStore.availableGraphs.Any(x => x == databaseName))
                 return false;
-            using (var session = _driver.Session(o => o.WithDatabase(databaseName)))
+            using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
             {
                 // Get graph from db
-                SupplyNetwork graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
+                SupplyNetwork graphData = await session.ReadTransactionAsync(tx => CypherTransactions.GetCompleteGraphAsync(tx));
                 _graphStore.StoreGraph(databaseName, graphData);
 
                 // retrieve schema
-                var dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
+                var dbSchema = await session.ReadTransactionAsync(tx => CypherTransactions.GetDatabaseSchemaAsync(tx));
                 _graphStore.StoreSchema(databaseName, dbSchema);
+
+                await UpdateCentralityMeasuresInDb(session);
             }
             return true;
         }
@@ -72,16 +74,16 @@ namespace SCRI.Services
             return new GraphViewerSettings(_graphStore);
         }
 
-        private async Task<bool> UpdateCentralityMeasuresInDb(ISession session)
+        private async Task<bool> UpdateCentralityMeasuresInDb(IAsyncSession session)
         {
             // Check plugins
-            var procedures = session.ReadTransaction(tx => CypherTransactions.GetAvailableProcedures(tx));
+            var procedures = await session.ReadTransactionAsync(tx => CypherTransactions.GetAvailableProceduresAsync(tx));
             bool apoc = Neo4jUtils.isAPOCEnabled(procedures);
             bool gds = Neo4jUtils.isGraphDataScienceLibraryEnabled(procedures);
             if (!apoc || !gds)
                 return false;
             // Execute Centrality Algorithms and write results to graph properties
-            session.WriteTransaction<object>(tx => CypherTransactions.WriteCentralityMeasuresToProperty(tx));
+            await session.WriteTransactionAsync(tx => CypherTransactions.WriteCentralityMeasuresToPropertyAsync(tx));
             return true;
         }
     }
