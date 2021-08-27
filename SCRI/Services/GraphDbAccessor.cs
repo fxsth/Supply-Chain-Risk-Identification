@@ -38,7 +38,7 @@ namespace SCRI.Services
             }
         }
 
-        public string GetDefaultGraph()
+        public string GetDefaultGraphName()
         {
             return _graphStore.defaultGraph;
         }
@@ -56,6 +56,8 @@ namespace SCRI.Services
                 return false;
             using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
             {
+                await UpdateCentralityMeasuresInDb(session);
+
                 // Get graph from db
                 SupplyNetwork graphData = await session.ReadTransactionAsync(tx => CypherTransactions.GetCompleteGraphAsync(tx));
                 _graphStore.StoreGraph(databaseName, graphData);
@@ -64,7 +66,6 @@ namespace SCRI.Services
                 var dbSchema = await session.ReadTransactionAsync(tx => CypherTransactions.GetDatabaseSchemaAsync(tx));
                 _graphStore.StoreSchema(databaseName, dbSchema);
 
-                await UpdateCentralityMeasuresInDb(session);
             }
             return true;
         }

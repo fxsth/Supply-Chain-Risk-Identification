@@ -4,14 +4,12 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Neo4j.Driver;
-using SCRI.Database;
 using Microsoft.Msagl.Drawing;
 using Microsoft.Msagl.WpfGraphControl;
 using Microsoft.Msagl.Core.Routing;
 using Microsoft.Msagl.Core.Layout;
 using Microsoft.Msagl.Miscellaneous;
 using SCRI.Utils;
-using SCRI.Models;
 using SCRI.Services;
 using System.Threading.Tasks;
 
@@ -26,7 +24,7 @@ namespace SCRI
         private GraphViewerSettings _graphViewerSettings;
         private IGraphDbAccessor _graphDbAccessor;
         private Dictionary<int, Dictionary<string, string>> NodePropertiesAndValues;
-
+        private string _selectedDatabase;
         private EdgeRoutingSettings selectedEdgeRoutingSettings;
         public LayoutAlgorithm selectedLayoutAlgorithm;
 
@@ -58,9 +56,10 @@ namespace SCRI
         {
             await _graphDbAccessor.Init();
             Graph initialGraph = _graphViewerSettings.GetDefaultMSAGLGraph();
-            NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(_graphDbAccessor.GetDefaultGraph());
+            NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(_graphDbAccessor.GetDefaultGraphName());
             GraphDatabaseCombobox.ItemsSource = _graphDbAccessor.GetAvailableGraphs();
-            GraphDatabaseCombobox.Text = _graphDbAccessor.GetDefaultGraph();
+            _selectedDatabase = _graphDbAccessor.GetDefaultGraphName();
+            GraphDatabaseCombobox.Text = _selectedDatabase;
 
             // default layout: MDS
             selectedLayoutAlgorithm = LayoutAlgorithm.MDS;
@@ -160,13 +159,13 @@ namespace SCRI
         {
             if (e.AddedItems.Count == 0 || _graphViewer is null || _graphViewer.Graph is null)
                 return;
-            var selectedDatabase = e.AddedItems[0].ToString();
-            await _graphDbAccessor.RetrieveGraphFromDatabase(selectedDatabase);
-            var graph = _graphViewerSettings.GetMSAGLGraph(selectedDatabase);
+            _selectedDatabase = e.AddedItems[0].ToString();
+            await _graphDbAccessor.RetrieveGraphFromDatabase(_selectedDatabase);
+            var graph = _graphViewerSettings.GetMSAGLGraph(_selectedDatabase);
             graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
             graph.Attr = _graphViewer.Graph.Attr;
             _graphViewer.Graph = graph;
-            NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(selectedDatabase);
+            NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(_selectedDatabase);
             NodePropertiesItemsControl.ItemsSource = NodePropertiesAndValues.First().Value;
         }
 
@@ -181,7 +180,10 @@ namespace SCRI
                 return;
             Enum.TryParse(e.AddedItems[0].ToString(), out GraphViewerSettings.NodeSizeDependsOn nodeSizeDependence);
             _graphViewerSettings.selectedNodeSizeDependence = nodeSizeDependence;
-            _graphViewer.Graph = _graphViewer.Graph;
+            var graph = _graphViewerSettings.GetMSAGLGraph(_selectedDatabase);
+            graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
+            graph.Attr = _graphViewer.Graph.Attr;
+            _graphViewer.Graph = graph;
         }
     }
 

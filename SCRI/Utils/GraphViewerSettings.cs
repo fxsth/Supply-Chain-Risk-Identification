@@ -4,6 +4,7 @@ using SCRI.Models;
 using SCRI.Services;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +18,8 @@ namespace SCRI.Utils
         public NodeSizeDependsOn selectedNodeSizeDependence;
         private Dictionary<string, Color> NodeLabelColor;
         private readonly IGraphStore _graphStore;
+        private double? _minScore;
+        private double? _maxScore;
 
         public GraphViewerSettings(IGraphStore graphStore)
         {
@@ -45,26 +48,51 @@ namespace SCRI.Utils
             return NodeLabelColor[label];
         }
 
+        private void PrepareNodeSizeNormalization(string graphname)
+        {
+            var dict = new Dictionary<NodeSizeDependsOn, string> {
+                {NodeSizeDependsOn.DegreeCentrality, "degree" },
+                {NodeSizeDependsOn.ClosenessCentrality,  "closeness" },
+                {NodeSizeDependsOn.BetweennessCentrality, "betweenness" }
+            };
+            if (!dict.ContainsKey(selectedNodeSizeDependence))
+                return;
+            string scoreProperty = dict[selectedNodeSizeDependence];
+            var graph = _graphStore.GetGraph(graphname);
+            foreach (var node in graph.Vertices)
+            {
+                double score = Convert.ToDouble(node.Properties[scoreProperty]);
+                if (_minScore is null || score < _minScore)
+                    _minScore = score;
+                if (_maxScore is null || score > _maxScore)
+                    _maxScore = score;
+            }
+        }
+
         public double CentralityMeasureToNodeSize(Supplier node)
         {
+            double nodesize = 50;
+            if (_minScore is null || _maxScore is null)
+                return 50;
+            double range = (double)(_maxScore - _minScore);
             switch (selectedNodeSizeDependence)
             {
                 case NodeSizeDependsOn.None:
-                    return 50;
+                    break;
                 case NodeSizeDependsOn.DegreeCentrality:
                     if (node.Properties.ContainsKey("degree"))
-                        return Convert.ToDouble(node.Properties["degree"]) * 20;
+                        nodesize = Convert.ToDouble(node.Properties["degree"]) / range * 60+30;
                     break;
                 case NodeSizeDependsOn.ClosenessCentrality:
                     if (node.Properties.ContainsKey("closeness"))
-                        return Convert.ToDouble(node.Properties["closeness"]) * 100 + 20;
+                        nodesize = Convert.ToDouble(node.Properties["closeness"]) / range * 60+30;
                     break;
                 case NodeSizeDependsOn.BetweennessCentrality:
                     if (node.Properties.ContainsKey("betweenness"))
-                        return Convert.ToDouble(node.Properties["betweenness"]) + 30;
+                        nodesize = Convert.ToDouble(node.Properties["betweenness"]) / range * 60+30;
                     break;
             }
-            return 50;
+            return nodesize == 0 ? 10 : nodesize;
         }
 
         public Graph GetDefaultMSAGLGraph()
@@ -78,6 +106,7 @@ namespace SCRI.Utils
             var dbSchema = _graphStore.GetDbSchema(graphName);
             var supplyNetwork = _graphStore.GetGraph(graphName);
             AssignColorsToLabels(dbSchema.GetUniqueNodeLabels());
+            PrepareNodeSizeNormalization(graphName);
             if (supplyNetwork.Edges.Any())
             {
                 foreach (var edge in supplyNetwork.Edges)
@@ -92,7 +121,7 @@ namespace SCRI.Utils
                     n2.LabelText = edge.Target.ToString();
                     n2.Attr.FillColor = GetLabelColor(edge.Target.Label.First());
                     n2.Attr.Shape = Shape.Circle; ;
-                    n2.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x => CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Source)));
+                    n2.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x => CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Target)));
 
                     var e = graph.AddEdge(n1.Id, n2.Id);
                 }

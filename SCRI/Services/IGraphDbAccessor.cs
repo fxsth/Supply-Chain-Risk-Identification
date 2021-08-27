@@ -7,7 +7,7 @@ namespace SCRI.Services
     public interface IGraphDbAccessor
     {
         Task Init();
-        string GetDefaultGraph();
+        string GetDefaultGraphName();
         Dictionary<int, Dictionary<string, string>> GetGraphPropertiesAndValues(string graphName);
         IEnumerable<string> GetAvailableGraphs();
         Task<bool> RetrieveGraphFromDatabase(string databaseName);
