@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Neo4j.Driver;
 using SCRI.Database;
+using SCRI.Models;
+using SCRI.Services;
 using System;
 using System.Data.Common;
 using System.Windows;
@@ -27,6 +29,8 @@ namespace SCRI
             // easy driver replacement with different credentials / settings
             // credentials / settings stored in factory
             services.AddSingleton<IDriverFactory, DriverFactory>();
+            services.AddSingleton<IGraphStore,GraphStore>();
+            services.AddScoped<IGraphDbAccessor, GraphDbAccessor>();
             services.AddTransient<DbConnectionWindow>();
             services.AddTransient<MainWindow>();
         }

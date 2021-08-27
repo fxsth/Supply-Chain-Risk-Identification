@@ -1,6 +1,7 @@
 ﻿using Microsoft.Msagl.Core.Geometry.Curves;
 using Microsoft.Msagl.Drawing;
 using SCRI.Models;
+using SCRI.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +13,16 @@ namespace SCRI.Utils
 {
     public class GraphViewerSettings
     {
+        private readonly string _defaultgraph;
         public NodeSizeDependsOn selectedNodeSizeDependence;
         private Dictionary<string, Color> NodeLabelColor;
+        private readonly IGraphStore _graphStore;
+
+        public GraphViewerSettings(IGraphStore graphStore)
+        {
+            _graphStore = graphStore;
+            _defaultgraph = _graphStore.defaultGraph;
+        }
 
         public enum NodeSizeDependsOn
         {
@@ -44,23 +53,30 @@ namespace SCRI.Utils
                     return 50;
                 case NodeSizeDependsOn.DegreeCentrality:
                     if (node.Properties.ContainsKey("degree"))
-                        return Convert.ToDouble(node.Properties["degree"])*20;
+                        return Convert.ToDouble(node.Properties["degree"]) * 20;
                     break;
                 case NodeSizeDependsOn.ClosenessCentrality:
                     if (node.Properties.ContainsKey("closeness"))
-                        return Convert.ToDouble(node.Properties["closeness"])*100+20;
+                        return Convert.ToDouble(node.Properties["closeness"]) * 100 + 20;
                     break;
                 case NodeSizeDependsOn.BetweennessCentrality:
                     if (node.Properties.ContainsKey("betweenness"))
-                        return Convert.ToDouble(node.Properties["betweenness"])+30;
+                        return Convert.ToDouble(node.Properties["betweenness"]) + 30;
                     break;
             }
             return 50;
         }
 
-        public Graph GetGraph(SupplyNetwork supplyNetwork, DbSchema dbSchema)
+        public Graph GetDefaultMSAGLGraph()
+        {
+            return GetMSAGLGraph(_graphStore.defaultGraph);
+        }
+
+        public Graph GetMSAGLGraph(string graphName)
         {
             Graph graph = new Graph();
+            var dbSchema = _graphStore.GetDbSchema(graphName);
+            var supplyNetwork = _graphStore.GetGraph(graphName);
             AssignColorsToLabels(dbSchema.GetUniqueNodeLabels());
             if (supplyNetwork.Edges.Any())
             {
@@ -83,7 +99,7 @@ namespace SCRI.Utils
             }
             else
             {
-                foreach(var vertex in supplyNetwork.Vertices)
+                foreach (var vertex in supplyNetwork.Vertices)
                 {
                     var n = graph.AddNode(vertex.ID.ToString());
                     n.LabelText = vertex.ToString();

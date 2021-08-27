@@ -8,7 +8,10 @@ using System.Threading.Tasks;
 
 namespace SCRI.Database
 {
-    // implements IDriverFactory
+    /// <summary>
+    /// Factory for Neo4j driver
+    /// Creates Driver with user definied credentials
+    /// </summary>
     class DriverFactory : IDriverFactory
     {
         public string URI { get; set; }

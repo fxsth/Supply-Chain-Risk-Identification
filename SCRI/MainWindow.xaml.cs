@@ -12,6 +12,7 @@ using Microsoft.Msagl.Core.Layout;
 using Microsoft.Msagl.Miscellaneous;
 using SCRI.Utils;
 using SCRI.Models;
+using SCRI.Services;
 
 namespace SCRI
 {
@@ -20,11 +21,9 @@ namespace SCRI
     /// </summary>
     public partial class MainWindow : Window
     {
-        private DriverFactory _driverFactory;
-        private IDriver driver;
         private GraphViewer _graphViewer;
-        private GraphViewerSettings graphViewerSettings = new GraphViewerSettings();
-        private SupplyNetwork graphData;
+        private GraphViewerSettings _graphViewerSettings;
+        private IGraphDbAccessor _graphDbAccessor;
         private Dictionary<int, Dictionary<string, string>> NodePropertiesAndValues;
 
         private EdgeRoutingSettings selectedEdgeRoutingSettings;
@@ -32,10 +31,11 @@ namespace SCRI
 
 
 
-        public MainWindow(IDriverFactory driverFactory)
+        public MainWindow(IGraphDbAccessor graphDbAccessor)
         {
             InitializeComponent();
-            _driverFactory = driverFactory as DriverFactory;
+            _graphDbAccessor = graphDbAccessor;
+            _graphViewerSettings = _graphDbAccessor.CreateGraphViewerSettings();
             Loaded += MainWindow_Loaded;
         }
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -55,27 +55,11 @@ namespace SCRI
 
         private void InitialGraphVisualization()
         {
-            driver = _driverFactory.CreateDriver();
-            Graph initialGraph = new Graph();
-            using (var session = driver.Session())
-            {
-                // Get graph from db
-                graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
-                // Check plugins
-                var procedures = session.ReadTransaction(tx => CypherTransactions.GetAvailableProcedures(tx));
-                bool apoc = Neo4jUtils.isAPOCEnabled(procedures);
-                bool gds = Neo4jUtils.isGraphDataScienceLibraryEnabled(procedures);
-                // Execute Centrality Algorithms and write results to graph properties
-                session.WriteTransaction<object>(tx => CypherTransactions.WriteCentralityMeasuresToProperty(tx));
-                // retrieve schema
-                var dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
-                initialGraph = graphViewerSettings.GetGraph(graphData, dbSchema);
-                NodePropertiesAndValues = Neo4jUtils.GetGraphPropertiesAndValues(graphData);
-                var databases = session.ReadTransaction(tx => CypherTransactions.GetDatabases(tx));
-                GraphDatabaseCombobox.ItemsSource = databases;
-                GraphDatabaseCombobox.Text = session.ReadTransaction(tx => CypherTransactions.GetDefaultDatabase(tx));
-
-            }
+            _graphDbAccessor.Init();
+            Graph initialGraph = _graphViewerSettings.GetDefaultMSAGLGraph();
+            NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(_graphDbAccessor.GetDefaultGraph());
+            GraphDatabaseCombobox.ItemsSource = _graphDbAccessor.GetAvailableGraphs();
+            GraphDatabaseCombobox.Text = _graphDbAccessor.GetDefaultGraph();
 
             // default layout: MDS
             selectedLayoutAlgorithm = LayoutAlgorithm.MDS;
@@ -93,7 +77,7 @@ namespace SCRI
             _graphViewer.Graph = initialGraph;
 
             NodeSizeDependenceComboBox.ItemsSource = GeneralUtils.enumToStringList(typeof(GraphViewerSettings.NodeSizeDependsOn));
-            NodeSizeDependenceComboBox.Text = graphViewerSettings.selectedNodeSizeDependence.ToString();
+            NodeSizeDependenceComboBox.Text = _graphViewerSettings.selectedNodeSizeDependence.ToString();
         }
 
         private void UpdateGraphLayout(Graph graph)
@@ -115,8 +99,8 @@ namespace SCRI
 
         private void OnObjectUnderMouseCursorChanged(object sender, EventArgs e)
         {
-            var viewerObject = e.As<ObjectUnderMouseCursorChangedEventArgs>().NewObject ;
-            if(viewerObject != null && viewerObject.DrawingObject is Microsoft.Msagl.Drawing.Node)
+            var viewerObject = e.As<ObjectUnderMouseCursorChangedEventArgs>().NewObject;
+            if (viewerObject != null && viewerObject.DrawingObject is Microsoft.Msagl.Drawing.Node)
             {
                 var id = Convert.ToInt32(viewerObject.DrawingObject.As<Microsoft.Msagl.Drawing.Node>().Id);
                 NodePropertiesItemsControl.ItemsSource = NodePropertiesAndValues[id];
@@ -129,7 +113,7 @@ namespace SCRI
 
         private async void LayoutAlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_graphViewer == null || _graphViewer.Graph == null || e.AddedItems.Count<1)
+            if (_graphViewer == null || _graphViewer.Graph == null || e.AddedItems.Count < 1)
                 return;
             Graph graph = _graphViewer.Graph;
             selectedLayoutAlgorithm = e.AddedItems[0].As<LayoutAlgorithm>();
@@ -137,7 +121,7 @@ namespace SCRI
             {
                 case LayoutAlgorithm.FastIncremental:
                     graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Incremental.FastIncrementalLayoutSettings()
-                    { 
+                    {
                         EdgeRoutingSettings = selectedEdgeRoutingSettings
                     };
                     break;
@@ -176,27 +160,18 @@ namespace SCRI
             if (e.AddedItems.Count == 0 || _graphViewer is null || _graphViewer.Graph is null)
                 return;
             var selectedDatabase = e.AddedItems[0].ToString();
-            using (var session = driver.Session(o => o.WithDatabase(selectedDatabase)))
-            {
-                session.WriteTransaction<object>(tx => CypherTransactions.WriteCentralityMeasuresToProperty(tx));
-                graphData = session.ReadTransaction(tx => CypherTransactions.GetCompleteGraph(tx));
-                var dbSchema = session.ReadTransaction(tx => CypherTransactions.GetDatabaseSchema(tx));
-                var graph = graphViewerSettings.GetGraph(graphData, dbSchema);
-                graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
-                graph.Attr = _graphViewer.Graph.Attr;
-                _graphViewer.Graph = graph;
-                NodePropertiesAndValues = Neo4jUtils.GetGraphPropertiesAndValues(graphData);
-                NodePropertiesItemsControl.ItemsSource = NodePropertiesAndValues.First().Value;
-            }
+            _graphDbAccessor.RetrieveGraphFromDatabase(selectedDatabase);
+            var graph = _graphViewerSettings.GetMSAGLGraph(selectedDatabase);
+            graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
+            graph.Attr = _graphViewer.Graph.Attr;
+            _graphViewer.Graph = graph;
+            NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(selectedDatabase);
+            NodePropertiesItemsControl.ItemsSource = NodePropertiesAndValues.First().Value;
         }
 
         private void GraphDatabaseCombobox_DropDownOpened(object sender, EventArgs e)
         {
-            using (var session = driver.Session())
-            {
-                var databases = session.ReadTransaction(tx => CypherTransactions.GetDatabases(tx));
-                GraphDatabaseCombobox.ItemsSource = databases;
-            }
+            GraphDatabaseCombobox.ItemsSource = _graphDbAccessor.GetAvailableGraphs();
         }
 
         private void NodeSizeDependenceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -204,7 +179,7 @@ namespace SCRI
             if (e.AddedItems.Count == 0)
                 return;
             Enum.TryParse(e.AddedItems[0].ToString(), out GraphViewerSettings.NodeSizeDependsOn nodeSizeDependence);
-            graphViewerSettings.selectedNodeSizeDependence = nodeSizeDependence;
+            _graphViewerSettings.selectedNodeSizeDependence = nodeSizeDependence;
             _graphViewer.Graph = _graphViewer.Graph;
         }
     }

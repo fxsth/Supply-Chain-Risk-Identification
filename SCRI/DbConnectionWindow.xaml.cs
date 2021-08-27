@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Neo4j.Driver;
 using SCRI.Database;
+using SCRI.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,14 +24,15 @@ namespace SCRI
     /// </summary>
     public partial class DbConnectionWindow : Window
     {
-        private DriverFactory _driverFactory;
-        private IServiceProvider _serviceProvider;
+        private IDriverFactory _driverFactory;
+        //private MainWindow _mainWindow;
+        private readonly IServiceProvider _serviceProvider;
 
         // Simple Injection to be able to change IDrivers default config
-        public DbConnectionWindow(IServiceProvider serviceProvider,IDriverFactory driverFactory)
+        public DbConnectionWindow(IDriverFactory driverFactory, IServiceProvider serviceProvider)
         {
             InitializeComponent();
-            _driverFactory = driverFactory as DriverFactory;
+            _driverFactory = driverFactory;
             _serviceProvider = serviceProvider;
         }
          

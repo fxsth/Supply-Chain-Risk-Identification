@@ -15,6 +15,11 @@ namespace SCRI.Models
         public IReadOnlyList<string> Label { get; set; }
         public Dictionary<string, string> Properties { get; set; }
         public int ID { get; }
+
+        /// <summary>
+        /// Get node's name or title 
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             string nodeText;
