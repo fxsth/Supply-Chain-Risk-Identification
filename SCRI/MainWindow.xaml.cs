@@ -24,11 +24,11 @@ namespace SCRI
         private GraphViewerSettings _graphViewerSettings;
         private IGraphDbAccessor _graphDbAccessor;
         private Dictionary<int, Dictionary<string, string>> NodePropertiesAndValues;
+
         private string _selectedDatabase;
         private EdgeRoutingSettings selectedEdgeRoutingSettings;
         public LayoutAlgorithm selectedLayoutAlgorithm;
-
-
+        public string selectedNodeLabelFilter;
 
         public MainWindow(IGraphDbAccessor graphDbAccessor)
         {
@@ -78,6 +78,12 @@ namespace SCRI
 
             NodeSizeDependenceComboBox.ItemsSource = GeneralUtils.enumToStringList(typeof(GraphViewerSettings.NodeSizeDependsOn));
             NodeSizeDependenceComboBox.Text = _graphViewerSettings.selectedNodeSizeDependence.ToString();
+
+            var listLabels = _graphDbAccessor.GetLabelsInGraphSchema(_selectedDatabase).ToList();
+            selectedNodeLabelFilter = "All Labels";
+            listLabels.Add("All Labels");
+            FilterNodeLabelsComboBox.ItemsSource = listLabels;
+            NodeSizeDependenceComboBox.Text = selectedNodeLabelFilter;
         }
 
         private void UpdateGraphLayout(Graph graph)
@@ -161,6 +167,10 @@ namespace SCRI
                 return;
             _selectedDatabase = e.AddedItems[0].ToString();
             await _graphDbAccessor.RetrieveGraphFromDatabase(_selectedDatabase);
+            var listLabels = _graphDbAccessor.GetLabelsInGraphSchema(_selectedDatabase).ToList();
+            selectedNodeLabelFilter = "All Labels";
+            listLabels.Add("All Labels");
+            FilterNodeLabelsComboBox.ItemsSource = listLabels;
             var graph = _graphViewerSettings.GetMSAGLGraph(_selectedDatabase);
             graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
             graph.Attr = _graphViewer.Graph.Attr;
@@ -180,6 +190,25 @@ namespace SCRI
                 return;
             Enum.TryParse(e.AddedItems[0].ToString(), out GraphViewerSettings.NodeSizeDependsOn nodeSizeDependence);
             _graphViewerSettings.selectedNodeSizeDependence = nodeSizeDependence;
+            var graph = _graphViewerSettings.GetMSAGLGraph(_selectedDatabase);
+            graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
+            graph.Attr = _graphViewer.Graph.Attr;
+            _graphViewer.Graph = graph;
+        }
+
+        private async void FilterNodeLabelsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count == 0 || e.AddedItems[0].ToString() == selectedNodeLabelFilter)
+                return;
+            selectedNodeLabelFilter = e.AddedItems[0].ToString();
+            if (selectedNodeLabelFilter == "All Labels")
+            {
+                await _graphDbAccessor.RetrieveGraphFromDatabase(_selectedDatabase);
+            }
+            else
+            {
+                await _graphDbAccessor.RetrieveGraphFromDatabase(_selectedDatabase, new List<string> { selectedNodeLabelFilter });
+            }
             var graph = _graphViewerSettings.GetMSAGLGraph(_selectedDatabase);
             graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
             graph.Attr = _graphViewer.Graph.Attr;

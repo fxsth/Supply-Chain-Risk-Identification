@@ -4,10 +4,7 @@ using SCRI.Models;
 using SCRI.Services;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using P2 = Microsoft.Msagl.Core.Geometry.Point;
 
 namespace SCRI.Utils
@@ -16,10 +13,28 @@ namespace SCRI.Utils
     {
         private readonly string _defaultgraph;
         public NodeSizeDependsOn selectedNodeSizeDependence;
-        private Dictionary<string, Color> NodeLabelColor;
+        private Dictionary<string, Color> NodeLabelColor = new Dictionary<string, Color>();
         private readonly IGraphStore _graphStore;
         private double? _minScore;
         private double? _maxScore;
+
+    //    private static string[] ColourValues = new string[] {
+    //    "#2471A3", "#F0B27A", "#E74C3C", "#1ABC9C", "#C0392B ", "#BB8FCE", "#8E44AD",
+    //    "#F39C12", "#2980B9", "#7DCEA0", "#3498DB", "#ECF0F1", "#16A085", "#D35400",
+    //    "#27AE60", "#00C000", "#2ECC71 ", "#C0C000", "#C000C0", "#00C0C0", "#C0C0C0",
+    //    "#400000", "#004000", "#000040", "#404000", "#400040", "#004040", "#404040",
+    //    "#200000", "#002000", "#000020", "#202000", "#200020", "#002020", "#202020",
+    //    "#600000", "#006000", "#000060", "#606000", "#600060", "#006060", "#606060",
+    //    "#A00000", "#00A000", "#0000A0", "#A0A000", "#A000A0", "#00A0A0", "#A0A0A0",
+    //    "#E00000", "#00E000", "#0000E0", "#E0E000", "#E000E0", "#00E0E0", "#E0E0E0",
+    //};
+        private static string[] ColourValues = new string[] {
+        "#85D2D6", "#82C95E", "#D5CD81", "#859AD6", "#859AD6", "#895EC9", "#226067",
+        "#5A7E2A", "#B4A63C", "#2A7728", "#C18844", "#BAD071", "#91307B", "A83840",
+        "#2471A3", "#F0B27A", "#E74C3C", "#1ABC9C", "#C0392B ", "#BB8FCE", "#8E44AD",
+        "#F39C12", "#2980B9", "#7DCEA0", "#3498DB", "#ECF0F1", "#16A085", "#D35400",
+        "#27AE60", "#86402D", "#54521C", "#1B5039", "#1B2E50", "#C34B51"
+    };
 
         public GraphViewerSettings(IGraphStore graphStore)
         {
@@ -37,8 +52,12 @@ namespace SCRI.Utils
 
         public void AssignColorsToLabels(IEnumerable<string> labels)
         {
-
-            NodeLabelColor = labels.ToDictionary(x => x, x => GetRandomMSAGLColor());
+            for (int i= 0; i < labels.Count(); i++)
+            {
+                Random rnd = new Random();
+                var color = System.Drawing.ColorTranslator.FromHtml(ColourValues[i]);// rnd.Next(ColourValues.Length-1)]);
+                NodeLabelColor[labels.ElementAt(i)] = new Color(color.R, color.G, color.B);
+            }
         }
 
         public Color GetLabelColor(string label)

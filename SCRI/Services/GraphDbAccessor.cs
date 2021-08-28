@@ -50,7 +50,12 @@ namespace SCRI.Services
             return Neo4jUtils.GetGraphPropertiesAndValues(_graphStore.GetGraph(graphName));
         }
 
-        public async Task<bool> RetrieveGraphFromDatabase(string databaseName)
+        public IEnumerable<string> GetLabelsInGraphSchema(string graphName)
+        {
+            return _graphStore.GetDbSchema(graphName).GetUniqueNodeLabels();
+        }
+
+        public async Task<bool> RetrieveGraphFromDatabase(string databaseName, IEnumerable<string> labelFilter = null)
         {
             if (!_graphStore.availableGraphs.Any(x => x == databaseName))
                 return false;
@@ -58,8 +63,12 @@ namespace SCRI.Services
             {
                 await UpdateCentralityMeasuresInDb(session);
 
-                // Get graph from db
-                SupplyNetwork graphData = await session.ReadTransactionAsync(tx => CypherTransactions.GetCompleteGraphAsync(tx));
+                // Get graph from Db
+                SupplyNetwork graphData;
+                if (labelFilter is null)
+                    graphData = await session.ReadTransactionAsync(tx => CypherTransactions.GetCompleteGraphAsync(tx));
+                else
+                    graphData = await session.ReadTransactionAsync(tx => CypherTransactions.GetGraphFilteredByLabelsAsync(tx, labelFilter));
                 _graphStore.StoreGraph(databaseName, graphData);
 
                 // retrieve schema

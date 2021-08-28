@@ -72,6 +72,6 @@ Create (hondaoem:Supplier {name: 'Honda OEM'})-[:Produces]->(p1:Product {name:'H
 (geplastics)-[:delivers]->(cvt),
 (cctech)-[:delivers]->(cvt),
 (plasco:Supplier{name:'Plasco'})-[:Produces]->(consolelid:Product {name:'Console lid'}),
-(plasco)-[:delivers]->(cvt),(fabric)-[:part_of]->(armrest),
+(plasco)-[:delivers]->(cvt),
 (plasco)-[:Produces]->(armrestlock:Product{name:'Armrest lock'}),
 (armrestlock)-[:part_of]->(console)

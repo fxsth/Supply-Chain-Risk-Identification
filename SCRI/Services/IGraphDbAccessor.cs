@@ -10,7 +10,8 @@ namespace SCRI.Services
         string GetDefaultGraphName();
         Dictionary<int, Dictionary<string, string>> GetGraphPropertiesAndValues(string graphName);
         IEnumerable<string> GetAvailableGraphs();
-        Task<bool> RetrieveGraphFromDatabase(string databaseName);
+        IEnumerable<string> GetLabelsInGraphSchema(string graphName);
+        Task<bool> RetrieveGraphFromDatabase(string databaseName, IEnumerable<string> labelFilter = null);
         GraphViewerSettings CreateGraphViewerSettings();
     }
 }

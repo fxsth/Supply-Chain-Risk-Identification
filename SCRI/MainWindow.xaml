@@ -52,6 +52,11 @@
                     <ComboBox  Margin="5" x:Name="NodeSizeDependenceComboBox" Width="100" SelectionChanged="NodeSizeDependenceComboBox_SelectionChanged"/>
                 </StackPanel>
                 <Separator/>
+                <StackPanel Orientation="Horizontal">
+                    <Label Width="150" Margin="5" Content="Filter node labels"/>
+                    <ComboBox  Margin="5" x:Name="FilterNodeLabelsComboBox" Width="100" SelectionChanged="FilterNodeLabelsComboBox_SelectionChanged"/>
+                </StackPanel>
+                <Separator/>
                 <ItemsControl Name="NodePropertiesItemsControl">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
