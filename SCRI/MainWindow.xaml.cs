@@ -214,6 +214,11 @@ namespace SCRI
             graph.Attr = _graphViewer.Graph.Attr;
             _graphViewer.Graph = graph;
         }
+
+        private async void SNLPButton_Click(object sender, RoutedEventArgs e)
+        {
+            await _graphDbAccessor.StartSNLP(_selectedDatabase);
+        }
     }
 
     public enum LayoutAlgorithm

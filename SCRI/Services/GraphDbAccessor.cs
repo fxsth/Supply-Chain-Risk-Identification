@@ -96,5 +96,13 @@ namespace SCRI.Services
             await session.WriteTransactionAsync(tx => CypherTransactions.WriteCentralityMeasuresToPropertyAsync(tx));
             return true;
         }
+
+        public async Task StartSNLP(string databaseName)
+        {
+            using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
+            {
+                var outsourcingAssociations = await session.ReadTransactionAsync(tx => CypherTransactions.GetOutsourcingAssociations(tx, "Supplier", "Product"));
+            }
+        }
     }
 }

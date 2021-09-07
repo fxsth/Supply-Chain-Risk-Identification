@@ -57,6 +57,10 @@
                     <ComboBox  Margin="5" x:Name="FilterNodeLabelsComboBox" Width="100" SelectionChanged="FilterNodeLabelsComboBox_SelectionChanged"/>
                 </StackPanel>
                 <Separator/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Margin="5" x:Name="SNLPButton" Content="Start Supply Network Link Prediction" Click="SNLPButton_Click"></Button>
+                </StackPanel>
+                <Separator/>
                 <ItemsControl Name="NodePropertiesItemsControl">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
