@@ -13,6 +13,6 @@ namespace SCRI.Services
         IEnumerable<string> GetLabelsInGraphSchema(string graphName);
         Task<bool> RetrieveGraphFromDatabase(string databaseName, IEnumerable<string> labelFilter = null);
         GraphViewerSettings CreateGraphViewerSettings();
-        Task StartSNLP(string databaseName);
+        Task StartSupplyChainLinkPrediction(string databaseName);
     }
 }

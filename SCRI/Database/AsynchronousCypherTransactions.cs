@@ -202,9 +202,9 @@ namespace SCRI.Database
 
         public static async Task<Dictionary<int, int>> GetOutsourcingAssociations(IAsyncTransaction tx, string labelSupplier, string labelProduct)
         {
-            Dictionary<int, int> supplierOutsourcingAssociations = new Dictionary<int, int>();
             string query = $"MATCH (s1:{labelSupplier})-[]->(p1:{labelProduct})-[]->(p2:{labelProduct})-[]-(s2:{labelSupplier}) RETURN s1, s2";
             var res = await tx.RunAsync(query);
+            Dictionary<int, int> supplierOutsourcingAssociations = new Dictionary<int, int>();
             while (await res.FetchAsync())
             {
                 var s1 = (res.Current[0] as INode);
@@ -216,9 +216,9 @@ namespace SCRI.Database
 
         public static async Task<Dictionary<int, int>> GetBuyerAssociations(IAsyncTransaction tx, string labelSupplier)
         {
-            Dictionary<int, int> supplierOutsourcingAssociations = new Dictionary<int, int>();
             string query = $"MATCH (seller1:{labelSupplier})-[]->(buyer:{labelSupplier})<-[]-(seller2:{labelSupplier}) RETURN seller1, seller2";
             var res = await tx.RunAsync(query);
+            Dictionary<int, int> supplierOutsourcingAssociations = new Dictionary<int, int>();
             while (await res.FetchAsync())
             {
                 var seller1 = (res.Current[0] as INode);
@@ -230,9 +230,9 @@ namespace SCRI.Database
 
         public static async Task<Dictionary<int, int>> GetCompetitionAssociations(IAsyncTransaction tx, string labelSupplier)
         {
-            Dictionary<int, int> supplierOutsourcingAssociations = new Dictionary<int, int>();
             string query = $"MATCH (s1:{labelSupplier})-[]->(product:{labelSupplier})<-[]-(s2:{labelSupplier}) RETURN s1, s2";
             var res = await tx.RunAsync(query);
+            Dictionary<int, int> supplierOutsourcingAssociations = new Dictionary<int, int>();
             while (await res.FetchAsync())
             {
                 var s1 = (res.Current[0] as INode);
@@ -242,6 +242,19 @@ namespace SCRI.Database
             return supplierOutsourcingAssociations;
         }
 
+        public static async Task<Dictionary<int, int>> GetCrossProduct(IAsyncTransaction tx, string labelSupplier)
+        {
+            string query = $"MATCH (s1:{labelSupplier}), (s2:{labelSupplier}) RETURN s1, s2";
+            var res = await tx.RunAsync(query);
+            Dictionary<int, int> crossProduct = new Dictionary<int, int>();
+            while (await res.FetchAsync())
+            {
+                var s1 = (res.Current[0] as INode);
+                var s2 = (res.Current[1] as INode);
+                crossProduct[s1.Id.As<int>()] = s2.Id.As<int>();
+            }
+            return crossProduct;
+        }
 
 
         private static string CreateCypherQueryNodeFilterByLabels(IEnumerable<string> labels)

@@ -23,6 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Link Prediction\MachineLearning.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Microsoft.Msagl.WpfGraphControl">
       <HintPath>..\..\automatic-graph-layout\GraphLayout\tools\WpfGraphControl\bin\Debug\netcoreapp3.1\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
     </Reference>

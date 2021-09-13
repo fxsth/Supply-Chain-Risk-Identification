@@ -97,12 +97,17 @@ namespace SCRI.Services
             return true;
         }
 
-        public async Task StartSNLP(string databaseName)
+        public async Task StartSupplyChainLinkPrediction(string databaseName)
         {
             using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
             {
                 var outsourcingAssociations = await session.ReadTransactionAsync(tx => CypherTransactions.GetOutsourcingAssociations(tx, "Supplier", "Product"));
+                var buyerAssociations = await session.ReadTransactionAsync(tx => CypherTransactions.GetBuyerAssociations(tx, "Supplier"));
+                var competitionAssociations = await session.ReadTransactionAsync(tx => CypherTransactions.GetCompetitionAssociations(tx, "Supplier"));
+                var degree = await session.ReadTransactionAsync(tx => CypherTransactions.GetDegreeCentralityAsStreamAsync(tx));
             }
+            //TODO: Calculate link prediction measures by iterating through associations
+            // Get cross product and set values to create traing data set
         }
     }
 }

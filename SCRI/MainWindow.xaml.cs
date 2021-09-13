@@ -217,7 +217,7 @@ namespace SCRI
 
         private async void SNLPButton_Click(object sender, RoutedEventArgs e)
         {
-            await _graphDbAccessor.StartSNLP(_selectedDatabase);
+            await _graphDbAccessor.StartSupplyChainLinkPrediction(_selectedDatabase);
         }
     }
 
