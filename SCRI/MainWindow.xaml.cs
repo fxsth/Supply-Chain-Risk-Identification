@@ -12,6 +12,10 @@ using Microsoft.Msagl.Miscellaneous;
 using SCRI.Utils;
 using SCRI.Services;
 using System.Threading.Tasks;
+using MachineLearning;
+using MachineLearning.Models;
+using Microsoft.ML.AutoML;
+using Microsoft.ML.Data;
 
 namespace SCRI
 {
@@ -37,6 +41,7 @@ namespace SCRI
             _graphViewerSettings = _graphDbAccessor.CreateGraphViewerSettings();
             Loaded += MainWindow_Loaded;
         }
+
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             _graphViewer = new GraphViewer();
@@ -56,7 +61,8 @@ namespace SCRI
         {
             await _graphDbAccessor.Init();
             Graph initialGraph = _graphViewerSettings.GetDefaultMSAGLGraph();
-            NodePropertiesAndValues = _graphDbAccessor.GetGraphPropertiesAndValues(_graphDbAccessor.GetDefaultGraphName());
+            NodePropertiesAndValues =
+                _graphDbAccessor.GetGraphPropertiesAndValues(_graphDbAccessor.GetDefaultGraphName());
             GraphDatabaseCombobox.ItemsSource = _graphDbAccessor.GetAvailableGraphs();
             _selectedDatabase = _graphDbAccessor.GetDefaultGraphName();
             GraphDatabaseCombobox.Text = _selectedDatabase;
@@ -76,7 +82,8 @@ namespace SCRI
 
             _graphViewer.Graph = initialGraph;
 
-            NodeSizeDependenceComboBox.ItemsSource = GeneralUtils.enumToStringList(typeof(GraphViewerSettings.NodeSizeDependsOn));
+            NodeSizeDependenceComboBox.ItemsSource =
+                GeneralUtils.enumToStringList(typeof(GraphViewerSettings.NodeSizeDependsOn));
             NodeSizeDependenceComboBox.Text = _graphViewerSettings.selectedNodeSizeDependence.ToString();
 
             var listLabels = _graphDbAccessor.GetLabelsInGraphSchema(_selectedDatabase).ToList();
@@ -98,6 +105,7 @@ namespace SCRI
         {
             CurrentStatusLabel.Content = "Graph Layout Complete";
         }
+
         private void OnLayoutStarted(object sender, EventArgs e)
         {
             CurrentStatusLabel.Content = "Calculating Graph Layout...";
@@ -126,10 +134,11 @@ namespace SCRI
             switch (selectedLayoutAlgorithm)
             {
                 case LayoutAlgorithm.FastIncremental:
-                    graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Incremental.FastIncrementalLayoutSettings()
-                    {
-                        EdgeRoutingSettings = selectedEdgeRoutingSettings
-                    };
+                    graph.LayoutAlgorithmSettings =
+                        new Microsoft.Msagl.Layout.Incremental.FastIncrementalLayoutSettings()
+                        {
+                            EdgeRoutingSettings = selectedEdgeRoutingSettings
+                        };
                     break;
                 case LayoutAlgorithm.LargeGraph:
                     //_layoutAlgorithmSettings = new Microsoft.Msagl.Layout.LargeGraphLayout.LgLayoutSettings()  { EdgeRoutingSettings = _edgeRoutingSettings};
@@ -207,17 +216,52 @@ namespace SCRI
             }
             else
             {
-                await _graphDbAccessor.RetrieveGraphFromDatabase(_selectedDatabase, new List<string> { selectedNodeLabelFilter });
+                await _graphDbAccessor.RetrieveGraphFromDatabase(_selectedDatabase,
+                    new List<string> {selectedNodeLabelFilter});
             }
+
             var graph = _graphViewerSettings.GetMSAGLGraph(_selectedDatabase);
             graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
             graph.Attr = _graphViewer.Graph.Attr;
             _graphViewer.Graph = graph;
         }
 
-        private async void SNLPButton_Click(object sender, RoutedEventArgs e)
+        private async void LinkPredictionTrainButton_Click(object sender, RoutedEventArgs e)
         {
-            await _graphDbAccessor.StartSupplyChainLinkPrediction(_selectedDatabase);
+            CurrentStatusLabel.Content = $"Calculating Features...";
+            await _graphDbAccessor.CalculateLinkFeatures(_selectedDatabase);
+            Dictionary<(int, int), SupplyChainLinkFeatures> featuresList =
+                _graphDbAccessor.GetLinkFeatures(_selectedDatabase);
+
+            LinkPredictor linkPredictor = new LinkPredictor();
+            linkPredictor.SetData(featuresList.Values);
+            var modelSchema = linkPredictor.GetModelSchema();
+            string buttonText = LinkPredictionTrainButton.Content.ToString();
+            CurrentStatusLabel.Content = $"Training Data Model...";
+            linkPredictor.TrainModel(60, new Progress<RunDetail<BinaryClassificationMetrics>>());
+            linkPredictor.SaveModel(linkPredictor.GetBestModel());
+            LinkPredictionTrainButton.Content = buttonText;
+            CurrentStatusLabel.Content = $"Data Model trained and saved";
+        }
+
+        private async void LinkPredictionPredictButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_graphDbAccessor.ExistLinkFeatures(_selectedDatabase))
+            {
+                CurrentStatusLabel.Content = $"Calculating Link Features first...";
+                await _graphDbAccessor.CalculateLinkFeatures(_selectedDatabase);
+            }
+
+            var featuresList = _graphDbAccessor.GetLinkFeatures(_selectedDatabase);
+
+            CurrentStatusLabel.Content = $"Predicting Links";
+            LinkPredictor linkPredictor = new LinkPredictor();
+            linkPredictor.LoadModel();
+            Dictionary<(int, int), bool> predictedExistingLinks = linkPredictor.PredictLinkExistence(featuresList);
+
+            _graphViewer.Graph = _graphViewerSettings.AddPredictedLinksToGraph(_graphViewer.Graph,
+                predictedExistingLinks,
+                GraphViewerSettings.ShowPredictedLinks.OnlyAdditionalExisting);
         }
     }
 
@@ -229,5 +273,4 @@ namespace SCRI
         MDS,
         Ranking
     }
-
 }

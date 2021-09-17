@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Link Prediction\MachineLearning.csproj" />
+    <ProjectReference Include="..\MachineLearning\MachineLearning.csproj" />
   </ItemGroup>
 
   <ItemGroup>

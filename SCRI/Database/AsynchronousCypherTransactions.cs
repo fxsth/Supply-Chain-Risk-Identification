@@ -35,6 +35,19 @@ namespace SCRI.Database
             new Converter<IRecord, KeyValuePair<INode, INode>>(x => new KeyValuePair<INode, INode>(x.Values.Values.ElementAt(0).As<INode>(), x.Values.Values.ElementAt(1).As<INode>()))
             );
         }
+        
+        public static async Task<List<KeyValuePair<INode, INode>>> GetAllEdgesAsync(IAsyncTransaction tx, string labelFilter)
+        {
+            List<IRecord> edges = new List<IRecord>();
+            var reader = await tx.RunAsync($"MATCH (a : {labelFilter})-[]->(b:{labelFilter}) Return a,b");
+            while (await reader.FetchAsync())
+            {
+                edges.Add(reader.Current as IRecord);
+            }
+            return edges.ConvertAll(
+                new Converter<IRecord, KeyValuePair<INode, INode>>(x => new KeyValuePair<INode, INode>(x.Values.Values.ElementAt(0).As<INode>(), x.Values.Values.ElementAt(1).As<INode>()))
+            );
+        }
 
         public static async Task<SupplyNetwork> GetCompleteGraphAsync(IAsyncTransaction tx)
         {
@@ -157,7 +170,7 @@ namespace SCRI.Database
                             RETURN nodeId, score", graphProjection);
             while (await res.FetchAsync())
             {
-                var record = (res.Current[0] as IRecord);
+                var record = (res.Current as IRecord);
                 dict[record.Values["nodeId"].As<int>()] = record.Values["score"].As<double>();
             }
             return dict;
@@ -171,7 +184,7 @@ namespace SCRI.Database
                             RETURN nodeId, score");
             while (await res.FetchAsync())
             {
-                var record = (res.Current[0] as IRecord);
+                var record = (res.Current as IRecord);
                 dict[record.Values["nodeId"].As<int>()] = record.Values["score"].As<double>();
             }
             return dict;
@@ -232,26 +245,26 @@ namespace SCRI.Database
         {
             string query = $"MATCH (s1:{labelSupplier})-[]->(product:{labelSupplier})<-[]-(s2:{labelSupplier}) RETURN s1, s2";
             var res = await tx.RunAsync(query);
-            Dictionary<int, int> supplierOutsourcingAssociations = new Dictionary<int, int>();
+            Dictionary<int, int> competitionOutsourcingAssociations = new Dictionary<int, int>();
             while (await res.FetchAsync())
             {
                 var s1 = (res.Current[0] as INode);
                 var s2 = (res.Current[1] as INode);
-                supplierOutsourcingAssociations[s1.Id.As<int>()] = s2.Id.As<int>();
+                competitionOutsourcingAssociations[s1.Id.As<int>()] = s2.Id.As<int>();
             }
-            return supplierOutsourcingAssociations;
+            return competitionOutsourcingAssociations;
         }
 
-        public static async Task<Dictionary<int, int>> GetCrossProduct(IAsyncTransaction tx, string labelSupplier)
+        public static async Task<List<(int, int)>> GetCrossProduct(IAsyncTransaction tx, string labelSupplier)
         {
             string query = $"MATCH (s1:{labelSupplier}), (s2:{labelSupplier}) RETURN s1, s2";
             var res = await tx.RunAsync(query);
-            Dictionary<int, int> crossProduct = new Dictionary<int, int>();
+            List<(int, int)> crossProduct = new List<(int, int)>();
             while (await res.FetchAsync())
             {
                 var s1 = (res.Current[0] as INode);
                 var s2 = (res.Current[1] as INode);
-                crossProduct[s1.Id.As<int>()] = s2.Id.As<int>();
+                crossProduct.Add((s1.Id.As<int>(), s2.Id.As<int>()));
             }
             return crossProduct;
         }

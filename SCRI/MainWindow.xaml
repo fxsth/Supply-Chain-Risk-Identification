@@ -58,7 +58,11 @@
                 </StackPanel>
                 <Separator/>
                 <StackPanel Orientation="Horizontal">
-                    <Button Margin="5" x:Name="SNLPButton" Content="Start Supply Network Link Prediction" Click="SNLPButton_Click"></Button>
+                    <Button Margin="5" x:Name="LinkPredictionTrainButton" Content="Start Link Prediction Training" Click="LinkPredictionTrainButton_Click"></Button>
+                </StackPanel>
+                <Separator/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Margin="5" x:Name="LinkPredictionPredictButton" Content="Predict existing Links" Click="LinkPredictionPredictButton_Click"></Button>
                 </StackPanel>
                 <Separator/>
                 <ItemsControl Name="NodePropertiesItemsControl">

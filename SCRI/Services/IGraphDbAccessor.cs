@@ -1,6 +1,7 @@
 ﻿using SCRI.Utils;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MachineLearning.Models;
 
 namespace SCRI.Services
 {
@@ -13,6 +14,9 @@ namespace SCRI.Services
         IEnumerable<string> GetLabelsInGraphSchema(string graphName);
         Task<bool> RetrieveGraphFromDatabase(string databaseName, IEnumerable<string> labelFilter = null);
         GraphViewerSettings CreateGraphViewerSettings();
-        Task StartSupplyChainLinkPrediction(string databaseName);
+        public Task CalculateLinkFeatures(string databaseName);
+
+        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName);
+        public bool ExistLinkFeatures(string graphName);
     }
 }

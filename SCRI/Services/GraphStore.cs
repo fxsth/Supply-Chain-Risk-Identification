@@ -1,10 +1,7 @@
-﻿using QuikGraph;
-using SCRI.Models;
-using System;
+﻿using SCRI.Models;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SupplyChainLinkFeatures = MachineLearning.Models.SupplyChainLinkFeatures; 
 
 namespace SCRI.Services
 {
@@ -16,16 +13,19 @@ namespace SCRI.Services
         private Dictionary<string, SupplyNetwork> _graphDictionary = new Dictionary<string, SupplyNetwork>();
         private Dictionary<string, DbSchema> _schemaDictionary = new Dictionary<string, DbSchema>();
 
+        private Dictionary<string, Dictionary<(int, int), SupplyChainLinkFeatures>> _featuresMap =
+            new Dictionary<string, Dictionary<(int, int), SupplyChainLinkFeatures>>();
+
         public GraphStore()
         {
         }
 
         public string defaultGraph { get; set; }
-        public IEnumerable<string> availableGraphs => _graphDictionary.Select(x=>x.Key);
+        public IEnumerable<string> availableGraphs => _graphDictionary.Select(x => x.Key);
 
         public void AnnounceAvailableGraphs(IEnumerable<string> graphNames)
         {
-            foreach(var graph in graphNames)
+            foreach (var graph in graphNames)
             {
                 _graphDictionary[graph] = null;
             }
@@ -56,5 +56,13 @@ namespace SCRI.Services
         {
             _schemaDictionary[graphName] = schema;
         }
+
+        public void StoreLinkFeatures(string graphName, Dictionary<(int, int), SupplyChainLinkFeatures> featuresMap)
+        {
+            _featuresMap[graphName] = featuresMap;
+        }
+
+        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName) => _featuresMap[graphName];
+        public bool ExistLinkFeatures(string graphName) => _featuresMap.ContainsKey(graphName);
     }
 }

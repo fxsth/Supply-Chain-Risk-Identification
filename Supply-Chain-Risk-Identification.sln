@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.31105.61
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SCRI", "SCRI\SCRI.csproj", "{6D62C601-108B-42D1-BCB4-E5D58CB38FFD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning", "Link Prediction\MachineLearning.csproj", "{23CD3C4C-70E9-43A6-BDA4-30EEE1887430}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning", "MachineLearning\MachineLearning.csproj", "{FDE40CAA-2C02-4065-8368-84C54774F257}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{6D62C601-108B-42D1-BCB4-E5D58CB38FFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D62C601-108B-42D1-BCB4-E5D58CB38FFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D62C601-108B-42D1-BCB4-E5D58CB38FFD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{23CD3C4C-70E9-43A6-BDA4-30EEE1887430}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{23CD3C4C-70E9-43A6-BDA4-30EEE1887430}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{23CD3C4C-70E9-43A6-BDA4-30EEE1887430}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{23CD3C4C-70E9-43A6-BDA4-30EEE1887430}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDE40CAA-2C02-4065-8368-84C54774F257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDE40CAA-2C02-4065-8368-84C54774F257}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDE40CAA-2C02-4065-8368-84C54774F257}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDE40CAA-2C02-4065-8368-84C54774F257}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,7 @@
 ﻿using QuikGraph;
 using SCRI.Models;
 using System.Collections.Generic;
+using SupplyChainLinkFeatures = MachineLearning.Models.SupplyChainLinkFeatures;
 
 namespace SCRI.Services
 {
@@ -11,7 +12,10 @@ namespace SCRI.Services
         void StoreGraph(string graphName, SupplyNetwork graph);
         DbSchema GetDbSchema(string graphName);
         void StoreSchema(string graphName, DbSchema schema);
-        IEnumerable<string> availableGraphs { get;}
+        IEnumerable<string> availableGraphs { get; }
         void AnnounceAvailableGraphs(IEnumerable<string> graphNames);
+        public void StoreLinkFeatures(string graphName, Dictionary<(int, int), SupplyChainLinkFeatures> featuresMap);
+        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName);
+        public bool ExistLinkFeatures(string graphName);
     }
 }
