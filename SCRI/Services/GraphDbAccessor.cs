@@ -106,7 +106,6 @@ namespace SCRI.Services
 
         public async Task CalculateLinkFeatures(string databaseName)
         {
-            List<SupplyChainLinkFeatures> supplyChainLinkFeaturesList;
             using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
             {
                 // Performance can be improved by a query that gets complete connected graph with every score as properties

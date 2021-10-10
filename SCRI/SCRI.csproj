@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net5.0-windows10.0.20348.0</TargetFramework>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
@@ -22,12 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MachineLearning\MachineLearning.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.Msagl.WpfGraphControl">
-      <HintPath>..\..\automatic-graph-layout\GraphLayout\tools\WpfGraphControl\bin\Debug\netcoreapp3.1\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\WpfGraphControl\WpfGraphControl.csproj" />
   </ItemGroup>
 
 </Project>

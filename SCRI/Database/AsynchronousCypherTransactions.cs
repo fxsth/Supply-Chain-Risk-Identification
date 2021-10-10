@@ -165,7 +165,7 @@ namespace SCRI.Database
         public static async Task<Dictionary<int, double>> GetDegreeCentralityAsStreamAsync(IAsyncTransaction tx, string graphProjection)
         {
             Dictionary<int, double> dict = new Dictionary<int, double>();
-            var res = await tx.RunAsync(@"CALL gds.alpha.degree.stream('$graphProjection')
+            var res = await tx.RunAsync(@"CALL gds.degree.stream('$graphProjection')
                             YIELD nodeId, score
                             RETURN nodeId, score", graphProjection);
             while (await res.FetchAsync())
@@ -179,7 +179,7 @@ namespace SCRI.Database
         public static async Task<Dictionary<int, double>> GetDegreeCentralityAsStreamAsync(IAsyncTransaction tx)
         {
             Dictionary<int, double> dict = new Dictionary<int, double>();
-            var res = await tx.RunAsync(@"CALL gds.alpha.degree.stream({nodeProjection: '*', relationshipProjection: '*'})
+            var res = await tx.RunAsync(@"CALL gds.degree.stream({nodeProjection: '*', relationshipProjection: '*'})
                             YIELD nodeId, score
                             RETURN nodeId, score");
             while (await res.FetchAsync())
@@ -192,7 +192,7 @@ namespace SCRI.Database
 
         public static async Task WriteDegreeCentralityToPropertyAsync(IAsyncTransaction tx)
         {
-            await tx.RunAsync("CALL gds.alpha.degree.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'degree'})");
+            await tx.RunAsync("CALL gds.degree.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'degree'})");
         }
 
         public static async Task WriteBetweennessCentralityToPropertyAsync(IAsyncTransaction tx)
@@ -210,6 +210,7 @@ namespace SCRI.Database
             var degreeTask = WriteDegreeCentralityToPropertyAsync(tx);
             var betweennessTask = WriteBetweennessCentralityToPropertyAsync(tx);
             var closenessTask = WriteClosenessCentralityToPropertyAsync(tx);
+            // execute parallel
             await Task.WhenAll(degreeTask, betweennessTask, closenessTask);
         }
 
