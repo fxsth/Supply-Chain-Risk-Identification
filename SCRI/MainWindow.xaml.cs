@@ -125,7 +125,7 @@ namespace SCRI
             }
         }
 
-        private async void LayoutAlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void LayoutAlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_graphViewer == null || _graphViewer.Graph == null || e.AddedItems.Count < 1)
                 return;
@@ -139,9 +139,6 @@ namespace SCRI
                         {
                             EdgeRoutingSettings = _selectedEdgeRoutingSettings
                         };
-                    break;
-                case LayoutAlgorithm.LargeGraph:
-                    //_layoutAlgorithmSettings = new Microsoft.Msagl.Layout.LargeGraphLayout.LgLayoutSettings()  { EdgeRoutingSettings = _edgeRoutingSettings};
                     break;
                 case LayoutAlgorithm.Sugiyama:
                     graph.LayoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings()
@@ -172,20 +169,27 @@ namespace SCRI
 
         private async void GraphDatabaseCombobox_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count == 0 || _graphViewer is null || _graphViewer.Graph is null)
-                return;
-            _selectedDatabase = e.AddedItems[0].ToString();
-            await _graphService.RetrieveGraphFromDatabase(_selectedDatabase);
-            var listLabels = _graphService.GetLabelsInGraphSchema(_selectedDatabase).ToList();
-            SelectedNodeLabelFilter = "All Labels";
-            listLabels.Add("All Labels");
-            FilterNodeLabelsComboBox.ItemsSource = listLabels;
-            var graph = _graphViewerSettings.GetMsaglGraph(_selectedDatabase);
-            graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
-            graph.Attr = _graphViewer.Graph.Attr;
-            _graphViewer.Graph = graph;
-            _nodePropertiesAndValues = _graphService.GetGraphPropertiesAndValues(_selectedDatabase);
-            NodePropertiesItemsControl.ItemsSource = _nodePropertiesAndValues.First().Value;
+            try
+            {
+                if (e.AddedItems.Count == 0 || _graphViewer is null || _graphViewer.Graph is null)
+                    return;
+                _selectedDatabase = e.AddedItems[0].ToString();
+                await _graphService.RetrieveGraphFromDatabase(_selectedDatabase);
+                var listLabels = _graphService.GetLabelsInGraphSchema(_selectedDatabase).ToList();
+                SelectedNodeLabelFilter = "All Labels";
+                listLabels.Add("All Labels");
+                FilterNodeLabelsComboBox.ItemsSource = listLabels;
+                var graph = _graphViewerSettings.GetMsaglGraph(_selectedDatabase);
+                graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
+                graph.Attr = _graphViewer.Graph.Attr;
+                _graphViewer.Graph = graph;
+                _nodePropertiesAndValues = _graphService.GetGraphPropertiesAndValues(_selectedDatabase);
+                NodePropertiesItemsControl.ItemsSource = _nodePropertiesAndValues.First().Value;
+            }
+            catch (Exception ex)
+            {
+                // ignored
+            }
         }
 
         private void GraphDatabaseCombobox_DropDownOpened(object sender, EventArgs e)
@@ -195,7 +199,7 @@ namespace SCRI
 
         private void NodeSizeDependenceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count == 0)
+            if (e?.AddedItems.Count < 1)
                 return;
             Enum.TryParse(e.AddedItems[0].ToString(), out GraphViewerSettings.NodeSizeDependsOn nodeSizeDependence);
             _graphViewerSettings.selectedNodeSizeDependence = nodeSizeDependence;
@@ -268,7 +272,6 @@ namespace SCRI
     public enum LayoutAlgorithm
     {
         FastIncremental,
-        LargeGraph,
         Sugiyama,
         MDS,
         Ranking

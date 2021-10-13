@@ -57,7 +57,7 @@ namespace SCRI.Models
         /// <summary>
         /// Class that represent a data structure like: NodeLabel-[EdgeType]->NodeLabel
         /// </summary>
-        public class EdgeTypeBetweenTwoNodes
+        private class EdgeTypeBetweenTwoNodes
         {
             public string SourceNodeLabel { get; set; }
             public string TargetNodeLabel { get; set; }
