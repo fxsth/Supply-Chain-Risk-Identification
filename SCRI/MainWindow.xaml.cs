@@ -223,7 +223,7 @@ namespace SCRI
                 await _graphService.RetrieveGraphFromDatabase(_selectedDatabase,
                     new List<string> {SelectedNodeLabelFilter});
             }
-
+            _nodePropertiesAndValues = _graphService.GetGraphPropertiesAndValues(_selectedDatabase);
             var graph = _graphViewerSettings.GetMsaglGraph(_selectedDatabase);
             graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
             graph.Attr = _graphViewer.Graph.Attr;

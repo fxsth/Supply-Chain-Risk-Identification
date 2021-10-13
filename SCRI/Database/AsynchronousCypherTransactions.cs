@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SCRI.Utils;
 
 namespace SCRI.Database
 {
@@ -162,26 +163,26 @@ namespace SCRI.Database
                 ); ;
         }
 
-        public static async Task<Dictionary<int, double>> GetDegreeCentralityAsStreamAsync(IAsyncTransaction tx, string graphProjection)
-        {
-            Dictionary<int, double> dict = new Dictionary<int, double>();
-            var res = await tx.RunAsync(@"CALL gds.degree.stream('$graphProjection')
-                            YIELD nodeId, score
-                            RETURN nodeId, score", graphProjection);
-            while (await res.FetchAsync())
-            {
-                var record = (res.Current as IRecord);
-                dict[record.Values["nodeId"].As<int>()] = record.Values["score"].As<double>();
-            }
-            return dict;
-        }
+        // public static async Task<Dictionary<int, double>> GetDegreeCentralityAsStreamAsync(IAsyncTransaction tx, string graphProjection)
+        // {
+        //     Dictionary<int, double> dict = new Dictionary<int, double>();
+        //     var res = await tx.RunAsync(@"CALL gds.degree.stream('$graphProjection')
+        //                     YIELD nodeId, score
+        //                     RETURN nodeId, score", graphProjection);
+        //     while (await res.FetchAsync())
+        //     {
+        //         var record = (res.Current as IRecord);
+        //         dict[record.Values["nodeId"].As<int>()] = record.Values["score"].As<double>();
+        //     }
+        //     return dict;
+        // }
 
-        public static async Task<Dictionary<int, double>> GetDegreeCentralityAsStreamAsync(IAsyncTransaction tx)
+        public static async Task<Dictionary<int, double>> GetDegreeCentralityAsStreamAsync(IAsyncTransaction tx, string filterByNodeLabel = "*")
         {
-            Dictionary<int, double> dict = new Dictionary<int, double>();
-            var res = await tx.RunAsync(@"CALL gds.degree.stream({nodeProjection: '*', relationshipProjection: '*'})
+            var res = await tx.RunAsync("CALL gds.degree.stream({nodeProjection: '"+filterByNodeLabel+@"', relationshipProjection: '*'})
                             YIELD nodeId, score
                             RETURN nodeId, score");
+            Dictionary<int, double> dict = new Dictionary<int, double>();
             while (await res.FetchAsync())
             {
                 var record = (res.Current as IRecord);
@@ -190,26 +191,27 @@ namespace SCRI.Database
             return dict;
         }
 
-        public static async Task WriteDegreeCentralityToPropertyAsync(IAsyncTransaction tx)
+        public static async Task WriteDegreeCentralityToPropertyAsync(IAsyncTransaction tx, string procedureName, string filterByNodeLabel = "*")
         {
-            await tx.RunAsync("CALL gds.degree.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'degree'})");
+            await tx.RunAsync("CALL "+procedureName +"({nodeProjection: '"+filterByNodeLabel+"', relationshipProjection: '*', writeProperty: 'degree'})");
         }
 
-        public static async Task WriteBetweennessCentralityToPropertyAsync(IAsyncTransaction tx)
+        public static async Task WriteBetweennessCentralityToPropertyAsync(IAsyncTransaction tx, string procedureName, string filterByNodeLabel = "*")
         {
-            await tx.RunAsync("CALL gds.betweenness.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'betweenness'})");
+            await tx.RunAsync("CALL "+procedureName +"({nodeProjection: '"+filterByNodeLabel+"', relationshipProjection: '*', writeProperty: 'betweenness'})");
         }
 
-        public static async Task WriteClosenessCentralityToPropertyAsync(IAsyncTransaction tx)
+        public static async Task WriteClosenessCentralityToPropertyAsync(IAsyncTransaction tx, string procedureName, string filterByNodeLabel = "*")
         {
-            await tx.RunAsync("CALL gds.alpha.closeness.write({nodeProjection: '*', relationshipProjection: '*', writeProperty: 'closeness'})");
+            await tx.RunAsync("CALL "+procedureName +"({nodeProjection: '"+filterByNodeLabel+"', relationshipProjection: '*', writeProperty: 'closeness'})");
         }
 
-        public static async Task WriteCentralityMeasuresToPropertyAsync(IAsyncTransaction tx)
+        public static async Task WriteCentralityMeasuresToPropertyAsync(IAsyncTransaction tx, string filterByNodeLabel = "*")
         {
-            var degreeTask = WriteDegreeCentralityToPropertyAsync(tx);
-            var betweennessTask = WriteBetweennessCentralityToPropertyAsync(tx);
-            var closenessTask = WriteClosenessCentralityToPropertyAsync(tx);
+            IEnumerable<string> procedures = await GetAvailableProceduresAsync(tx);
+            var degreeTask = WriteDegreeCentralityToPropertyAsync(tx, Neo4jUtils.GetSpecificProcedure(procedures,"degree.write"), filterByNodeLabel);
+            var betweennessTask = WriteBetweennessCentralityToPropertyAsync(tx, Neo4jUtils.GetSpecificProcedure(procedures,"betweenness.write"), filterByNodeLabel);
+            var closenessTask = WriteClosenessCentralityToPropertyAsync(tx, Neo4jUtils.GetSpecificProcedure(procedures,"closeness.write"), filterByNodeLabel);
             // execute parallel
             await Task.WhenAll(degreeTask, betweennessTask, closenessTask);
         }

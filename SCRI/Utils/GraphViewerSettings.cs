@@ -88,6 +88,8 @@ namespace SCRI.Utils
                 return;
             string scoreProperty = dict[selectedNodeSizeDependence];
             var graph = _graphStore.GetGraph(graphname);
+            _minScore = null;
+            _maxScore = null;
             foreach (var node in graph.Vertices)
             {
                 double score = Convert.ToDouble(node.Properties[scoreProperty]);
@@ -101,8 +103,8 @@ namespace SCRI.Utils
         public double CentralityMeasureToNodeSize(Supplier node)
         {
             double nodesize = 50;
-            if (_minScore is null || _maxScore is null)
-                return 50;
+            if (_minScore is null || _maxScore is null || _maxScore == 0)
+                return nodesize;
             double range = (double) (_maxScore - _minScore);
             switch (selectedNodeSizeDependence)
             {
@@ -137,38 +139,32 @@ namespace SCRI.Utils
             var supplyNetwork = _graphStore.GetGraph(graphName);
             AssignColorsToLabels(dbSchema.GetUniqueNodeLabels());
             PrepareNodeSizeNormalization(graphName);
-            if (supplyNetwork.Edges.Any())
+            foreach (var vertex in supplyNetwork.Vertices)
             {
-                foreach (var edge in supplyNetwork.Edges)
-                {
-                    var n1 = graph.AddNode(edge.Source.ID.ToString());
-                    n1.LabelText = edge.Source.ToString();
-                    n1.Attr.FillColor = GetLabelColor(edge.Source.Label.First());
-                    n1.Attr.Shape = Shape.Circle;
-                    n1.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x =>
-                        CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Source)));
-
-                    var n2 = graph.AddNode(edge.Target.ID.ToString());
-                    n2.LabelText = edge.Target.ToString();
-                    n2.Attr.FillColor = GetLabelColor(edge.Target.Label.First());
-                    n2.Attr.Shape = Shape.Circle;
-                    ;
-                    n2.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x =>
-                        CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Target)));
-
-                    var e = graph.AddEdge(n1.Id, n2.Id);
-                }
+                var n = graph.AddNode(vertex.ID.ToString());
+                n.LabelText = vertex.ToString();
+                n.Attr.FillColor = GetLabelColor(vertex.Label.First());
+                n.Attr.Shape = Shape.Circle;
+                n.NodeBoundaryDelegate = x => CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(vertex));
             }
-            else
+            foreach (var edge in supplyNetwork.Edges)
             {
-                foreach (var vertex in supplyNetwork.Vertices)
-                {
-                    var n = graph.AddNode(vertex.ID.ToString());
-                    n.LabelText = vertex.ToString();
-                    n.Attr.FillColor = GetLabelColor(vertex.Label.First());
-                    n.Attr.Shape = Shape.Circle;
-                    //n.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x => CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(vertex)));
-                }
+                // var n1 = graph.AddNode(edge.Source.ID.ToString());
+                // n1.LabelText = edge.Source.ToString();
+                // n1.Attr.FillColor = GetLabelColor(edge.Source.Label.First());
+                // n1.Attr.Shape = Shape.Circle;
+                // n1.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x =>
+                //     CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Source)));
+                //
+                // var n2 = graph.AddNode(edge.Target.ID.ToString());
+                // n2.LabelText = edge.Target.ToString();
+                // n2.Attr.FillColor = GetLabelColor(edge.Target.Label.First());
+                // n2.Attr.Shape = Shape.Circle;
+                // ;
+                // n2.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x =>
+                //     CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Target)));
+
+                var e = graph.AddEdge(edge.Source.ID.ToString(), edge.Target.ID.ToString());
             }
 
             return graph;

@@ -61,7 +61,10 @@ namespace SCRI.Services
                 return false;
             using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
             {
-                await UpdateCentralityMeasuresInDb(session);
+                if(labelFilter?.Count() == 1)
+                    await UpdateCentralityMeasuresInDb(session, labelFilter.Single());
+                else
+                    await UpdateCentralityMeasuresInDb(session);
 
                 // Get graph from Db
                 SupplyNetwork graphData;
@@ -73,7 +76,7 @@ namespace SCRI.Services
                 _graphStore.StoreGraph(databaseName, graphData);
 
                 // retrieve schema
-                var dbSchema = await session.ReadTransactionAsync(tx => CypherTransactions.GetDatabaseSchemaAsync(tx));
+                var dbSchema = await session.ReadTransactionAsync(CypherTransactions.GetDatabaseSchemaAsync);
                 _graphStore.StoreSchema(databaseName, dbSchema);
             }
 
@@ -85,17 +88,17 @@ namespace SCRI.Services
             return new GraphViewerSettings(_graphStore);
         }
 
-        private async Task<bool> UpdateCentralityMeasuresInDb(IAsyncSession session)
+        private async Task<bool> UpdateCentralityMeasuresInDb(IAsyncSession session, string filterByNodeLabel = "*")
         {
             // Check plugins
             var procedures =
-                await session.ReadTransactionAsync(tx => CypherTransactions.GetAvailableProceduresAsync(tx));
+                await session.ReadTransactionAsync(CypherTransactions.GetAvailableProceduresAsync);
             bool apoc = Neo4jUtils.IsAPOCEnabled(procedures);
             bool gds = Neo4jUtils.IsGraphDataScienceLibraryEnabled(procedures);
             if (!apoc || !gds)
                 return false;
             // Execute Centrality Algorithms and write results to graph properties
-            await session.WriteTransactionAsync(tx => CypherTransactions.WriteCentralityMeasuresToPropertyAsync(tx));
+            await session.WriteTransactionAsync(tx => CypherTransactions.WriteCentralityMeasuresToPropertyAsync(tx, filterByNodeLabel));
             return true;
         }
 

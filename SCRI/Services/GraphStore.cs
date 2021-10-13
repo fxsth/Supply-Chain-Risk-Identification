@@ -10,15 +10,10 @@ namespace SCRI.Services
     /// </summary>
     public class GraphStore : IGraphStore
     {
-        private Dictionary<string, SupplyNetwork> _graphDictionary = new Dictionary<string, SupplyNetwork>();
-        private Dictionary<string, DbSchema> _schemaDictionary = new Dictionary<string, DbSchema>();
+        private readonly Dictionary<string, SupplyNetwork> _graphDictionary = new();
+        private readonly Dictionary<string, DbSchema> _schemaDictionary = new();
 
-        private Dictionary<string, Dictionary<(int, int), SupplyChainLinkFeatures>> _featuresMap =
-            new Dictionary<string, Dictionary<(int, int), SupplyChainLinkFeatures>>();
-
-        public GraphStore()
-        {
-        }
+        private readonly Dictionary<string, Dictionary<(int, int), SupplyChainLinkFeatures>> _featuresMap = new();
 
         public string defaultGraph { get; set; }
         public IEnumerable<string> availableGraphs => _graphDictionary.Select(x => x.Key);

@@ -19,6 +19,11 @@ namespace SCRI.Utils
             return listOfProcedures.Any(str => str.Contains("gds."));
         }
         
+        /// <summary>
+        /// Problem: some algorithms in GraphDataScienceLibrary are still in alpha-Version and can have different names
+        /// e.g. gds.closeness.write vs gds.alpha.closeness.write
+        /// Therefore, pick algorithm out of available procedures that contains algorithm name
+        /// </summary>
         public static string GetSpecificProcedure(IEnumerable<string> listOfProcedures, string searchTerm)
         {
             return listOfProcedures.FirstOrDefault(str => str.Contains(searchTerm));
