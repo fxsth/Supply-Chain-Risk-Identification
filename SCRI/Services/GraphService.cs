@@ -1,31 +1,26 @@
-﻿using Neo4j.Driver;
-using SCRI.Database;
-using SCRI.Models;
-using SCRI.Utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MachineLearning;
-using Microsoft.ML.AutoML;
-using Microsoft.ML.Data;
+using Neo4j.Driver;
+using SCRI.Database;
+using SCRI.Models;
+using SCRI.Utils;
 using SupplyChainLinkFeatures = MachineLearning.Models.SupplyChainLinkFeatures;
 
 namespace SCRI.Services
 {
-    class GraphDbAccessor : IGraphDbAccessor
+    class GraphService : IGraphService
     {
-        private readonly IDriverFactory _driverFactory;
-        private IDriver _driver;
-        private IGraphStore _graphStore;
+        private readonly IDriver _driver;
+        private readonly IGraphStore _graphStore;
 
         private const string SUPPLIER_LABEL = "Supplier";
 
-        public GraphDbAccessor(IDriverFactory driverFactory, IGraphStore graphStore)
+        public GraphService(IDriverFactory driverFactory, IGraphStore graphStore)
         {
-            _driverFactory = driverFactory;
             _graphStore = graphStore;
-            _driver = _driverFactory.CreateDriver();
+            _driver = driverFactory.CreateDriver();
         }
 
         public async Task Init()
@@ -62,7 +57,7 @@ namespace SCRI.Services
 
         public async Task<bool> RetrieveGraphFromDatabase(string databaseName, IEnumerable<string> labelFilter = null)
         {
-            if (!_graphStore.availableGraphs.Any(x => x == databaseName))
+            if (_graphStore.availableGraphs.All(x => x != databaseName))
                 return false;
             using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
             {
@@ -95,8 +90,8 @@ namespace SCRI.Services
             // Check plugins
             var procedures =
                 await session.ReadTransactionAsync(tx => CypherTransactions.GetAvailableProceduresAsync(tx));
-            bool apoc = Neo4jUtils.isAPOCEnabled(procedures);
-            bool gds = Neo4jUtils.isGraphDataScienceLibraryEnabled(procedures);
+            bool apoc = Neo4jUtils.IsAPOCEnabled(procedures);
+            bool gds = Neo4jUtils.IsGraphDataScienceLibraryEnabled(procedures);
             if (!apoc || !gds)
                 return false;
             // Execute Centrality Algorithms and write results to graph properties
@@ -165,10 +160,6 @@ namespace SCRI.Services
 
                 _graphStore.StoreLinkFeatures(databaseName, linkPredictionScores);
             }
-
-
-            //TODO: Calculate link prediction measures by iterating through associations
-            // Get cross product and set values to create traing data set
         }
 
         public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName) => _graphStore.GetLinkFeatures(graphName);

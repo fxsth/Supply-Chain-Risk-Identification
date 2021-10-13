@@ -62,7 +62,7 @@
                 </StackPanel>
                 <Separator/>
                 <StackPanel Orientation="Horizontal">
-                    <Button Margin="5" x:Name="LinkPredictionPredictButton" Content="Predict existing Links" Click="LinkPredictionPredictButton_Click"></Button>
+                    <Button Margin="5" x:Name="LinkPredictionPredictButton" Content="Predict not-visible Links" Click="LinkPredictionPredictButton_Click"></Button>
                 </StackPanel>
                 <Separator/>
                 <ItemsControl Name="NodePropertiesItemsControl">

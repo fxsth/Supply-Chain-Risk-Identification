@@ -1,11 +1,11 @@
-﻿using SCRI.Utils;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using MachineLearning.Models;
+using SCRI.Utils;
 
 namespace SCRI.Services
 {
-    public interface IGraphDbAccessor
+    public interface IGraphService
     {
         Task Init();
         string GetDefaultGraphName();

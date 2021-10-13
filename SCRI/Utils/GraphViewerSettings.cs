@@ -125,12 +125,12 @@ namespace SCRI.Utils
             return nodesize == 0 ? 10 : nodesize;
         }
 
-        public Graph GetDefaultMSAGLGraph()
+        public Graph GetDefaultMsaglGraph()
         {
-            return GetMSAGLGraph(_graphStore.defaultGraph);
+            return GetMsaglGraph(_graphStore.defaultGraph);
         }
 
-        public Graph GetMSAGLGraph(string graphName)
+        public Graph GetMsaglGraph(string graphName)
         {
             Graph graph = new Graph();
             var dbSchema = _graphStore.GetDbSchema(graphName);
@@ -269,7 +269,7 @@ namespace SCRI.Utils
                 return input + new string(' ', size - input.Length);
         }
 
-        private Color GetRandomMSAGLColor()
+        private Color GetRandomMsaglColor()
         {
             Random rnd = new Random();
             Byte[] b = new Byte[3];

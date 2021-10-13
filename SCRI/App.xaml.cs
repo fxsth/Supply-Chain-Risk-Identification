@@ -30,7 +30,7 @@ namespace SCRI
             // credentials / settings stored in factory
             services.AddSingleton<IDriverFactory, DriverFactory>();
             services.AddSingleton<IGraphStore,GraphStore>();
-            services.AddScoped<IGraphDbAccessor, GraphDbAccessor>();
+            services.AddScoped<IGraphService, GraphService>();
             services.AddTransient<DbConnectionWindow>();
             services.AddTransient<MainWindow>();
         }

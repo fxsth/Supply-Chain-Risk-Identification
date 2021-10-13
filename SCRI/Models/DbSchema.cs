@@ -11,28 +11,28 @@ namespace SCRI.Models
     /// </summary>
     public class DbSchema
     {
-        private List<EdgeTypeBetweenTwoNodes> _connectedEdgeAndNodeTypes { get; set; }
-        private List<string> _looseNodeTypes { get; set; }
+        private List<EdgeTypeBetweenTwoNodes> ConnectedEdgeAndNodeTypes { get; set; }
+        private List<string> LooseNodeTypes { get; set; }
 
         public DbSchema()
         {
-            _connectedEdgeAndNodeTypes = new List<EdgeTypeBetweenTwoNodes>();
-            _looseNodeTypes = new List<string>();
+            ConnectedEdgeAndNodeTypes = new List<EdgeTypeBetweenTwoNodes>();
+            LooseNodeTypes = new List<string>();
         }
 
         public void AddLooseNodeType(string nodeLabel)
         {
-            _looseNodeTypes.Add(nodeLabel);
+            LooseNodeTypes.Add(nodeLabel);
         }
 
         public void AddLooseNodeTypes(IEnumerable<string> nodeLabels)
         {
-            _looseNodeTypes.AddRange(nodeLabels);
+            LooseNodeTypes.AddRange(nodeLabels);
         }
 
         public void AddEdgeTypeBetweenTwoNodes(string sourceNodeLabel, string targetNodeLabel, string edgeType)
         {
-            _connectedEdgeAndNodeTypes.Add(new EdgeTypeBetweenTwoNodes()
+            ConnectedEdgeAndNodeTypes.Add(new EdgeTypeBetweenTwoNodes()
             {
                 SourceNodeLabel = sourceNodeLabel,
                 TargetNodeLabel = targetNodeLabel,
@@ -42,16 +42,16 @@ namespace SCRI.Models
 
         public IEnumerable<string> GetUniqueNodeLabels()
         {
-            return _connectedEdgeAndNodeTypes
+            return ConnectedEdgeAndNodeTypes
                 .SelectMany(x => new[] { x.SourceNodeLabel, x.TargetNodeLabel })
-                .Union(_looseNodeTypes)
+                .Union(LooseNodeTypes)
                 .Distinct()
                 .Where(s => !string.IsNullOrEmpty(s));
         }
 
         public IEnumerable<string> GetUniqueEdgeTypes()
         {
-            return _connectedEdgeAndNodeTypes.Select(x => x.EdgeType).Distinct().Where(s => !string.IsNullOrEmpty(s));
+            return ConnectedEdgeAndNodeTypes.Select(x => x.EdgeType).Distinct().Where(s => !string.IsNullOrEmpty(s));
         }
 
         /// <summary>
