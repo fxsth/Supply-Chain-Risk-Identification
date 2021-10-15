@@ -14,8 +14,6 @@ using SCRI.Services;
 using System.Threading.Tasks;
 using MachineLearning;
 using MachineLearning.Models;
-using Microsoft.ML.AutoML;
-using Microsoft.ML.Data;
 
 namespace SCRI
 {
@@ -242,7 +240,10 @@ namespace SCRI
             var modelSchema = linkPredictor.GetModelSchema();
             string buttonText = LinkPredictionTrainButton.Content.ToString();
             CurrentStatusLabel.Content = $"Training Data Model...";
-            linkPredictor.TrainModel(60, new Progress<RunDetail<BinaryClassificationMetrics>>());
+            // This event handler updates the progress bar.
+            
+            await Task.Run( () => linkPredictor.TrainModel(60, null));
+            await linkPredictor.SaveTrainingResults();
             linkPredictor.SaveModel(linkPredictor.GetBestModel());
             LinkPredictionTrainButton.Content = buttonText;
             CurrentStatusLabel.Content = $"Data Model trained and saved";

@@ -61,7 +61,7 @@ namespace SCRI.Services
                 return false;
             using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
             {
-                if(labelFilter?.Count() == 1)
+                if (labelFilter?.Count() == 1)
                     await UpdateCentralityMeasuresInDb(session, labelFilter.Single());
                 else
                     await UpdateCentralityMeasuresInDb(session);
@@ -98,74 +98,74 @@ namespace SCRI.Services
             if (!apoc || !gds)
                 return false;
             // Execute Centrality Algorithms and write results to graph properties
-            await session.WriteTransactionAsync(tx => CypherTransactions.WriteCentralityMeasuresToPropertyAsync(tx, filterByNodeLabel));
+            await session.WriteTransactionAsync(tx =>
+                CypherTransactions.WriteCentralityMeasuresToPropertyAsync(tx, filterByNodeLabel));
             return true;
         }
 
         public async Task CalculateLinkFeatures(string databaseName)
         {
-            using (var session = _driver.AsyncSession(o => o.WithDatabase(databaseName)))
+            await using var session = _driver.AsyncSession(o => o.WithDatabase(databaseName));
+            // Performance can be improved by a query that gets complete connected graph with every score as properties
+            
+            var crossProduct =
+                await session.ReadTransactionAsync(tx => CypherTransactions.GetCrossProduct(tx, SUPPLIER_LABEL));
+            // Associations exist between two Suppliers
+            // aggregate scores for relations
+            Dictionary<(int, int), SupplyChainLinkFeatures> linkPredictionScores =
+                crossProduct.ToDictionary(key => key, value => new SupplyChainLinkFeatures());
+
+            var outsourcingAssociations = await session.ReadTransactionAsync(tx =>
+                CypherTransactions.GetOutsourcingAssociations(tx, SUPPLIER_LABEL, "Product"));
+            // Increase association score on matching node-pair   
+            foreach (var association in outsourcingAssociations)
             {
-                // Performance can be improved by a query that gets complete connected graph with every score as properties
-
-                var outsourcingAssociations = await session.ReadTransactionAsync(tx =>
-                    CypherTransactions.GetOutsourcingAssociations(tx, SUPPLIER_LABEL, "Product"));
-                var buyerAssociations =
-                    await session.ReadTransactionAsync(
-                        tx => CypherTransactions.GetBuyerAssociations(tx, SUPPLIER_LABEL));
-                var competitionAssociations = await session.ReadTransactionAsync(tx =>
-                    CypherTransactions.GetCompetitionAssociations(tx, SUPPLIER_LABEL));
-                var degrees =
-                    await session.ReadTransactionAsync(tx => CypherTransactions.GetDegreeCentralityAsStreamAsync(tx));
-                var crossProduct =
-                    await session.ReadTransactionAsync(tx => CypherTransactions.GetCrossProduct(tx, SUPPLIER_LABEL));
-                var existingEdgesBetweenSuppliers =
-                    await session.ReadTransactionAsync(tx => CypherTransactions.GetAllEdgesAsync(tx, SUPPLIER_LABEL));
-
-                // Associations exist between two Suppliers
-                // aggregate scores for relations
-                Dictionary<(int, int), SupplyChainLinkFeatures> linkPredictionScores =
-                    crossProduct.ToDictionary(key => key, value => new SupplyChainLinkFeatures());
-
-                // Increase association score on matching node-pair   
-                foreach (var association in outsourcingAssociations)
-                {
-                    linkPredictionScores[GetSortedInts(association)].OutsourcingAssociation += 1;
-                }
-
-                foreach (var association in buyerAssociations)
-                {
-                    linkPredictionScores[GetSortedInts(association)].BuyerAssociation += 1;
-                }
-
-                foreach (var association in competitionAssociations)
-                {
-                    linkPredictionScores[GetSortedInts(association)].CompetitionAssociation += 1;
-                }
-
-                // Iterate through node-degree-pairs 
-                foreach (var degree in degrees)
-                {
-                    // and set degree on FIRST node in node-pair
-                    foreach (var keyValuePair in linkPredictionScores.Where(x => x.Key.Item1 == degree.Key))
-                    {
-                        keyValuePair.Value.Degree = Convert.ToInt32(degree.Value);
-                    }
-                }
-
-                foreach (var existingEdge in existingEdgesBetweenSuppliers)
-                {
-                    linkPredictionScores[
-                            GetSortedInts(
-                                new KeyValuePair<int, int>((int) existingEdge.Key.Id, (int) existingEdge.Value.Id))]
-                        .Exists = true;
-                }
-
-                _graphStore.StoreLinkFeatures(databaseName, linkPredictionScores);
+                linkPredictionScores[GetSortedInts(association)].OutsourcingAssociation += 1;
             }
+
+
+            var buyerAssociations =
+                await session.ReadTransactionAsync(
+                    tx => CypherTransactions.GetBuyerAssociations(tx, SUPPLIER_LABEL));
+            foreach (var association in buyerAssociations)
+            {
+                linkPredictionScores[GetSortedInts(association)].BuyerAssociation += 1;
+            }
+
+            var competitionAssociations = await session.ReadTransactionAsync(tx =>
+                CypherTransactions.GetCompetitionAssociations(tx, SUPPLIER_LABEL, "Product"));
+            foreach (var association in competitionAssociations)
+            {
+                linkPredictionScores[GetSortedInts(association)].CompetitionAssociation += 1;
+            }
+
+            var degrees =
+                await session.ReadTransactionAsync(tx => CypherTransactions.GetDegreeCentralityAsStreamAsync(tx));
+            // Iterate through node-degree-pairs 
+            foreach (var degree in degrees)
+            {
+                // and set degree on FIRST node in node-pair
+                foreach (var keyValuePair in linkPredictionScores.Where(x => x.Key.Item1 == degree.Key))
+                {
+                    keyValuePair.Value.Degree = Convert.ToInt32(degree.Value);
+                }
+            }
+
+            var existingEdgesBetweenSuppliers =
+                await session.ReadTransactionAsync(tx => CypherTransactions.GetAllEdgesAsync(tx, SUPPLIER_LABEL));
+            foreach (var existingEdge in existingEdgesBetweenSuppliers)
+            {
+                linkPredictionScores[
+                        GetSortedInts(
+                            new KeyValuePair<int, int>((int) existingEdge.Key.Id, (int) existingEdge.Value.Id))]
+                    .Exists = true;
+            }
+
+            _graphStore.StoreLinkFeatures(databaseName, linkPredictionScores);
         }
 
-        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName) => _graphStore.GetLinkFeatures(graphName);
+        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName) =>
+            _graphStore.GetLinkFeatures(graphName);
 
         public bool ExistLinkFeatures(string graphName) => _graphStore.ExistLinkFeatures(graphName);
 

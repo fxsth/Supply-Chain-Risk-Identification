@@ -244,9 +244,9 @@ namespace SCRI.Database
             return supplierOutsourcingAssociations;
         }
 
-        public static async Task<Dictionary<int, int>> GetCompetitionAssociations(IAsyncTransaction tx, string labelSupplier)
+        public static async Task<Dictionary<int, int>> GetCompetitionAssociations(IAsyncTransaction tx, string labelSupplier, string labelProduct)
         {
-            string query = $"MATCH (s1:{labelSupplier})-[]->(product:{labelSupplier})<-[]-(s2:{labelSupplier}) RETURN s1, s2";
+            string query = $"MATCH (s1:{labelSupplier})-[]->(product:{labelProduct})<-[]-(s2:{labelSupplier}) RETURN s1, s2";
             var res = await tx.RunAsync(query);
             Dictionary<int, int> competitionOutsourcingAssociations = new Dictionary<int, int>();
             while (await res.FetchAsync())
@@ -265,9 +265,10 @@ namespace SCRI.Database
             List<(int, int)> crossProduct = new List<(int, int)>();
             while (await res.FetchAsync())
             {
-                var s1 = (res.Current[0] as INode);
-                var s2 = (res.Current[1] as INode);
-                crossProduct.Add((s1.Id.As<int>(), s2.Id.As<int>()));
+                int id1 = ((INode) res.Current[0]).Id.As<int>();
+                int id2 = ((INode) res.Current[1]).Id.As<int>();
+                if(id1!=id2)
+                    crossProduct.Add((id1, id2));
             }
             return crossProduct;
         }
