@@ -16,6 +16,7 @@ namespace SCRI.Services
         private readonly IGraphStore _graphStore;
 
         private const string SupplierLabel = "Supplier";
+        private const string ProductLabel = "Product";
 
         public GraphService(IDriverFactory driverFactory, IGraphStore graphStore)
         {
@@ -116,7 +117,7 @@ namespace SCRI.Services
                 crossProduct.ToDictionary(key => key, value => new SupplyChainLinkFeatures());
 
             var outsourcingAssociations = await session.ReadTransactionAsync(tx =>
-                CypherTransactions.GetOutsourcingAssociations(tx, SupplierLabel, "Product"));
+                CypherTransactions.GetOutsourcingAssociations(tx, SupplierLabel, ProductLabel));
             // Increase association score on matching node-pair   
             foreach (var association in outsourcingAssociations)
             {
@@ -135,7 +136,7 @@ namespace SCRI.Services
             }
 
             var competitionAssociations = await session.ReadTransactionAsync(tx =>
-                CypherTransactions.GetCompetitionAssociations(tx, SupplierLabel, "Product"));
+                CypherTransactions.GetCompetitionAssociations(tx, SupplierLabel, ProductLabel));
             foreach (var association in competitionAssociations)
             {
                 linkPredictionScores[(association.Key, association.Value)].CompetitionAssociation += 1;

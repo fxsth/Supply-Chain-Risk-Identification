@@ -230,43 +230,57 @@ namespace SCRI
 
         private async void LinkPredictionTrainButton_Click(object sender, RoutedEventArgs e)
         {
-            CurrentStatusLabel.Content = $"Calculating Features...";
-            await _graphService.CalculateLinkFeatures(_selectedDatabase);
-            Dictionary<(int, int), SupplyChainLinkFeatures> featuresList =
-                _graphService.GetLinkFeatures(_selectedDatabase);
+            try
+            {
+                CurrentStatusLabel.Content = $"Calculating Features...";
+                await _graphService.CalculateLinkFeatures(_selectedDatabase);
+                Dictionary<(int, int), SupplyChainLinkFeatures> featuresList =
+                    _graphService.GetLinkFeatures(_selectedDatabase);
 
-            LinkPredictor linkPredictor = new LinkPredictor();
-            linkPredictor.SetData(featuresList.Values);
-            var modelSchema = linkPredictor.GetModelSchema();
-            string buttonText = LinkPredictionTrainButton.Content.ToString();
-            CurrentStatusLabel.Content = $"Training Data Model...";
-            // This event handler updates the progress bar.
-            
-            await Task.Run( () => linkPredictor.TrainModel(60, null));
-            await linkPredictor.SaveTrainingResults();
-            linkPredictor.SaveModel(linkPredictor.GetBestModel());
-            LinkPredictionTrainButton.Content = buttonText;
-            CurrentStatusLabel.Content = $"Data Model trained and saved";
+                LinkPredictor linkPredictor = new LinkPredictor();
+                linkPredictor.SetData(featuresList.Values);
+                var modelSchema = linkPredictor.GetModelSchema();
+                string buttonText = LinkPredictionTrainButton.Content.ToString();
+                CurrentStatusLabel.Content = $"Training Data Model...";
+                // This event handler updates the progress bar.
+
+                await Task.Run(() => linkPredictor.TrainModel(180, null));
+                await linkPredictor.SaveTrainingResults();
+                linkPredictor.SaveModel(linkPredictor.GetBestModel());
+                LinkPredictionTrainButton.Content = buttonText;
+                CurrentStatusLabel.Content = $"Data Model trained and saved";
+            }
+            catch (Exception ex)
+            {
+                CurrentStatusLabel.Content = ex.Message;
+            }
         }
 
         private async void LinkPredictionPredictButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_graphService.ExistLinkFeatures(_selectedDatabase))
+            try
             {
-                CurrentStatusLabel.Content = $"Calculating Link Features first...";
-                await _graphService.CalculateLinkFeatures(_selectedDatabase);
+                if (!_graphService.ExistLinkFeatures(_selectedDatabase))
+                {
+                    CurrentStatusLabel.Content = $"Calculating Link Features first...";
+                    await _graphService.CalculateLinkFeatures(_selectedDatabase);
+                }
+
+                var featuresList = _graphService.GetLinkFeatures(_selectedDatabase);
+
+                CurrentStatusLabel.Content = $"Predicting Links";
+                LinkPredictor linkPredictor = new LinkPredictor();
+                linkPredictor.LoadModel();
+                Dictionary<(int, int), bool> predictedExistingLinks = linkPredictor.PredictLinkExistence(featuresList);
+
+                _graphViewer.Graph = _graphViewerSettings.AddPredictedLinksToGraph(_graphViewer.Graph,
+                    predictedExistingLinks,
+                    GraphViewerSettings.ShowPredictedLinks.OnlyAdditionalExisting);
             }
-
-            var featuresList = _graphService.GetLinkFeatures(_selectedDatabase);
-
-            CurrentStatusLabel.Content = $"Predicting Links";
-            LinkPredictor linkPredictor = new LinkPredictor();
-            linkPredictor.LoadModel();
-            Dictionary<(int, int), bool> predictedExistingLinks = linkPredictor.PredictLinkExistence(featuresList);
-
-            _graphViewer.Graph = _graphViewerSettings.AddPredictedLinksToGraph(_graphViewer.Graph,
-                predictedExistingLinks,
-                GraphViewerSettings.ShowPredictedLinks.OnlyAdditionalExisting);
+            catch (Exception ex)
+            {
+                CurrentStatusLabel.Content = ex.Message;
+            }
         }
     }
 
