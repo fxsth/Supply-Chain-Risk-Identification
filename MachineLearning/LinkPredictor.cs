@@ -3,7 +3,9 @@ using Microsoft.ML.AutoML;
 using Microsoft.ML.Data;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using MachineLearning.Models;
 
@@ -17,6 +19,7 @@ namespace MachineLearning
         private string ModelFilePath;
         private string ResultsFilePath;
         private readonly MLContext _mlContext;
+        private IEnumerable<SupplyChainLinkFeatures> _inputData;
         private IDataView _trainingDataView;
         private DataViewSchema _modelSchema;
         private ITransformer _model;
@@ -32,6 +35,7 @@ namespace MachineLearning
 
         public void SetData(IEnumerable<SupplyChainLinkFeatures> inputData)
         {
+            _inputData = inputData;
             _trainingDataView = _mlContext.Data.LoadFromEnumerable(inputData);
         }
 
@@ -54,8 +58,10 @@ namespace MachineLearning
         {
             List<string> lines = new List<string>()
             {
+                
                 "--------- Training Results ----------",
-                $"Data set with {_trainingDataView.GetRowCount()} entries"
+                $"Data set with {_inputData.Count()} entries",
+                $"With {_inputData.Count(x=>x.Exists)} labeled positive"
             };
             
             foreach (var runDetail in _experimentResult.RunDetails)

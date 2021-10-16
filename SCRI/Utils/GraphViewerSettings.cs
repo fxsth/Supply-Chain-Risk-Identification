@@ -137,23 +137,8 @@ namespace SCRI.Utils
                 n.Attr.Shape = Shape.Circle;
                 n.NodeBoundaryDelegate = x => CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(vertex));
             }
-            foreach (var edge in supplyNetwork.Edges)
+            foreach (var edge in supplyNetwork.Edges?? new List<SupplierRelationship>())
             {
-                // var n1 = graph.AddNode(edge.Source.ID.ToString());
-                // n1.LabelText = edge.Source.ToString();
-                // n1.Attr.FillColor = GetLabelColor(edge.Source.Label.First());
-                // n1.Attr.Shape = Shape.Circle;
-                // n1.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x =>
-                //     CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Source)));
-                //
-                // var n2 = graph.AddNode(edge.Target.ID.ToString());
-                // n2.LabelText = edge.Target.ToString();
-                // n2.Attr.FillColor = GetLabelColor(edge.Target.Label.First());
-                // n2.Attr.Shape = Shape.Circle;
-                // ;
-                // n2.NodeBoundaryDelegate = new DelegateToSetNodeBoundary(x =>
-                //     CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(edge.Target)));
-
                 var e = graph.AddEdge(edge.Source.ID.ToString(), edge.Target.ID.ToString());
             }
 
