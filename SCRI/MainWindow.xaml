@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:SCRI"
+        xmlns:scriUtils="clr-namespace:SCRI.Utils"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"  
         d:DesignHeight="1024" d:DesignWidth="1980"
@@ -16,6 +17,12 @@
                         ObjectType="{x:Type sys:Enum}">
             <ObjectDataProvider.MethodParameters>
                 <x:Type TypeName="local:LayoutAlgorithm"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="dataFromEnumNodeSize" MethodName="GetValues"
+                            ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="scriUtils:NodeSizeDependsOn"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </Window.Resources>
@@ -49,7 +56,9 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Width="150" Margin="5" Content="Node size depends on"/>
-                    <ComboBox  Margin="5" x:Name="NodeSizeDependenceComboBox" Width="100" SelectionChanged="NodeSizeDependenceComboBox_SelectionChanged"/>
+                    <ComboBox  Margin="5" x:Name="NodeSizeDependenceComboBox" Width="100" 
+                               ItemsSource="{Binding Source={StaticResource dataFromEnumNodeSize}}"
+                               SelectionChanged="NodeSizeDependenceComboBox_SelectionChanged"/>
                 </StackPanel>
                 <Separator/>
                 <StackPanel Orientation="Horizontal">

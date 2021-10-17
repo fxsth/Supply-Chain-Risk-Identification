@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MachineLearning;
+using Microsoft.Extensions.Configuration;
 using Neo4j.Driver;
+using SCRI.Configuration;
 using SCRI.Database;
 using SCRI.Models;
 using SCRI.Utils;
-using SupplyChainLinkFeatures = MachineLearning.Models.SupplyChainLinkFeatures;
+using MachineLearning.Models;
 
 namespace SCRI.Services
 {
@@ -15,13 +18,17 @@ namespace SCRI.Services
         private readonly IDriver _driver;
         private readonly IGraphStore _graphStore;
 
-        private const string SupplierLabel = "Supplier";
-        private const string ProductLabel = "Product";
+        private readonly string _supplierLabel;
+        private readonly string _productLabel;
+        private readonly uint _mlTrainingTimeInSeconds;
 
-        public GraphService(IDriverFactory driverFactory, IGraphStore graphStore)
+        public GraphService(IDriverFactory driverFactory, IGraphStore graphStore, IConfiguration configuration)
         {
             _graphStore = graphStore;
             _driver = driverFactory.CreateDriver();
+            _supplierLabel = configuration.GetGraphSettings().LabelSupplier;
+            _productLabel = configuration.GetGraphSettings().LabelProduct;
+            _mlTrainingTimeInSeconds = configuration.GetMLSettings().TrainingTimeSpanInSeconds;
         }
 
         public async Task Init()
@@ -44,7 +51,10 @@ namespace SCRI.Services
             return _graphStore.defaultGraph;
         }
 
-        public IEnumerable<string> GetAvailableGraphs() => _graphStore.availableGraphs;
+        public IEnumerable<string> GetAvailableGraphs()
+        {
+            return _graphStore.availableGraphs;
+        }
 
         public Dictionary<int, Dictionary<string, string>> GetGraphPropertiesAndValues(string graphName)
         {
@@ -94,9 +104,8 @@ namespace SCRI.Services
             // Check plugins
             var procedures =
                 await session.ReadTransactionAsync(CypherTransactions.GetAvailableProceduresAsync);
-            bool apoc = Neo4jUtils.IsAPOCEnabled(procedures);
             bool gds = Neo4jUtils.IsGraphDataScienceLibraryEnabled(procedures);
-            if (!apoc || !gds)
+            if (!gds)
                 return false;
             // Execute Centrality Algorithms and write results to graph properties
             await session.WriteTransactionAsync(tx =>
@@ -104,53 +113,76 @@ namespace SCRI.Services
             return true;
         }
 
-        public async Task CalculateLinkFeatures(string databaseName)
+        public async Task TrainLinkPredictionOnGivenGraph(string databaseName)
+        {
+            Dictionary<(int, int), SupplyChainLinkFeatures> featuresList = await CalculateLinkFeatures(databaseName);
+
+            LinkPredictor linkPredictor = new LinkPredictor();
+            linkPredictor.SetData(featuresList.Values);
+
+            // run in another thread
+            await Task.Run(()=>linkPredictor.TrainModel(_mlTrainingTimeInSeconds, null));
+            await linkPredictor.SaveTrainingResults();
+            linkPredictor.SaveModel(linkPredictor.GetBestModel());
+        }
+
+        public async Task<Dictionary<(int, int), PredictedSupplyChainLink>> ExecuteLinkPredictionOnGivenGraph(string databaseName)
+        {
+            Dictionary<(int, int), SupplyChainLinkFeatures> featuresList = await CalculateLinkFeatures(databaseName);
+
+            LinkPredictor linkPredictor = new LinkPredictor();
+
+            // run in another thread
+            return await Task.Run(() => linkPredictor.PredictLinkExistences(featuresList));
+        }
+
+        private async Task<Dictionary<(int, int),SupplyChainLinkFeatures>>CalculateLinkFeatures(string databaseName)
         {
             await using var session = _driver.AsyncSession(o => o.WithDatabase(databaseName));
             // Performance can be improved by a query that gets complete connected graph with every score as properties
 
             var crossProduct =
-                await session.ReadTransactionAsync(tx => CypherTransactions.GetCrossProduct(tx, SupplierLabel));
+                await session.ReadTransactionAsync(tx => CypherTransactions.GetCrossProduct(tx, _supplierLabel));
             // Associations exist between two Suppliers
             // aggregate scores for relations
-            Dictionary<(int, int), SupplyChainLinkFeatures> linkPredictionScores =
-                crossProduct.ToDictionary(key => key, value => new SupplyChainLinkFeatures());
+            Dictionary<(int, int), SupplyChainLinkFeatures> linkPredictionFeatureSet =
+                crossProduct.ToDictionary(key => key, _ => new SupplyChainLinkFeatures());
 
             var outsourcingAssociations = await session.ReadTransactionAsync(tx =>
-                CypherTransactions.GetOutsourcingAssociations(tx, SupplierLabel, ProductLabel));
+                CypherTransactions.GetOutsourcingAssociations(tx, _supplierLabel, _productLabel));
             // Increase association score on matching node-pair   
             foreach (var association in outsourcingAssociations)
             {
                 // increase score on both node pairs a,b and node pair b,a
-                linkPredictionScores[(association.Key, association.Value)].OutsourcingAssociation += 1;
-                linkPredictionScores[(association.Value, association.Key)].OutsourcingAssociation += 1;
+                linkPredictionFeatureSet[(association.Key, association.Value)].OutsourcingAssociation += 1;
+                linkPredictionFeatureSet[(association.Value, association.Key)].OutsourcingAssociation += 1;
             }
 
             var buyerAssociations =
                 await session.ReadTransactionAsync(
-                    tx => CypherTransactions.GetBuyerAssociations(tx, SupplierLabel));
+                    tx => CypherTransactions.GetBuyerAssociations(tx, _supplierLabel));
             foreach (var association in buyerAssociations)
             {
-                linkPredictionScores[(association.Key, association.Value)].BuyerAssociation += 1;
-                linkPredictionScores[(association.Value, association.Key)].BuyerAssociation += 1;
+                linkPredictionFeatureSet[(association.Key, association.Value)].BuyerAssociation += 1;
+                linkPredictionFeatureSet[(association.Value, association.Key)].BuyerAssociation += 1;
             }
 
             var competitionAssociations = await session.ReadTransactionAsync(tx =>
-                CypherTransactions.GetCompetitionAssociations(tx, SupplierLabel, ProductLabel));
+                CypherTransactions.GetCompetitionAssociations(tx, _supplierLabel, _productLabel));
             foreach (var association in competitionAssociations)
             {
-                linkPredictionScores[(association.Key, association.Value)].CompetitionAssociation += 1;
-                linkPredictionScores[(association.Value, association.Key)].CompetitionAssociation += 1;
+                linkPredictionFeatureSet[(association.Key, association.Value)].CompetitionAssociation += 1;
+                linkPredictionFeatureSet[(association.Value, association.Key)].CompetitionAssociation += 1;
             }
 
             var degrees =
                 await session.ReadTransactionAsync(tx =>
-                    CypherTransactions.GetDegreeCentralityAsStreamAsync(tx, SupplierLabel));
+                    CypherTransactions.GetDegreeCentralityAsStreamAsync(tx, _supplierLabel));
             // Iterate through node-degree-pairs 
             foreach (var degree in degrees)
             {
                 // and set degree on FIRST node in node-pair (start node of possible edge)
-                foreach (var keyValuePair in linkPredictionScores.Where(x => x.Key.Item1 == degree.Key))
+                foreach (var keyValuePair in linkPredictionFeatureSet.Where(x => x.Key.Item1 == degree.Key))
                 {
                     keyValuePair.Value.Degree = Convert.ToInt32(degree.Value);
                 }
@@ -158,19 +190,20 @@ namespace SCRI.Services
 
             // set label
             var existingEdgesBetweenSuppliers =
-                await session.ReadTransactionAsync(tx => CypherTransactions.GetAllEdgesAsync(tx, SupplierLabel));
+                await session.ReadTransactionAsync(tx => CypherTransactions.GetAllEdgesAsync(tx, _supplierLabel));
             foreach (var existingEdge in existingEdgesBetweenSuppliers)
             {
-                linkPredictionScores[((int) existingEdge.Key.Id, (int) existingEdge.Value.Id)].Exists = true;
-                linkPredictionScores[((int) existingEdge.Value.Id, (int) existingEdge.Key.Id)].Exists = true;
+                linkPredictionFeatureSet[((int) existingEdge.Key.Id, (int) existingEdge.Value.Id)].Exists = true;
+                linkPredictionFeatureSet[((int) existingEdge.Value.Id, (int) existingEdge.Key.Id)].Exists = true;
             }
 
-            _graphStore.StoreLinkFeatures(databaseName, linkPredictionScores);
+            _graphStore.StoreLinkFeatures(databaseName, linkPredictionFeatureSet);
+            return linkPredictionFeatureSet;
         }
 
-        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName) =>
-            _graphStore.GetLinkFeatures(graphName);
+        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatureSet(string graphName) =>
+            _graphStore.GetLinkFeatureSet(graphName);
 
-        public bool ExistLinkFeatures(string graphName) => _graphStore.ExistLinkFeatures(graphName);
+        public bool ExistLinkFeatureSet(string graphName) => _graphStore.ExistLinkFeatureSet(graphName);
     }
 }

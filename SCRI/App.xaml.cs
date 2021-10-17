@@ -1,11 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Neo4j.Driver;
 using SCRI.Database;
-using SCRI.Models;
 using SCRI.Services;
-using System;
-using System.Data.Common;
 using System.Windows;
+using Microsoft.Extensions.Configuration;
 
 namespace SCRI
 {
@@ -14,7 +11,7 @@ namespace SCRI
     /// </summary>
     public partial class App : Application
     {
-        private ServiceProvider serviceProvider;
+        private readonly ServiceProvider serviceProvider;
 
         public App()
         {
@@ -25,6 +22,10 @@ namespace SCRI
 
         private void ConfigureServices(ServiceCollection services)
         {
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
+            services.AddSingleton<IConfiguration>(configuration);
             // DriverFactory as Singleton
             // easy driver replacement with different credentials / settings
             // credentials / settings stored in factory
@@ -37,6 +38,7 @@ namespace SCRI
 
         protected override void OnStartup(StartupEventArgs e)
         {
+
             var dbConnectionWindow = serviceProvider.GetService<DbConnectionWindow>();
             dbConnectionWindow.Show();
         }

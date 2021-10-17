@@ -57,7 +57,7 @@ namespace SCRI.Services
             _featuresMap[graphName] = featuresMap;
         }
 
-        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatures(string graphName) => _featuresMap[graphName];
-        public bool ExistLinkFeatures(string graphName) => _featuresMap.ContainsKey(graphName);
+        public Dictionary<(int, int), SupplyChainLinkFeatures> GetLinkFeatureSet(string graphName) => _featuresMap[graphName];
+        public bool ExistLinkFeatureSet(string graphName) => _featuresMap.ContainsKey(graphName);
     }
 }

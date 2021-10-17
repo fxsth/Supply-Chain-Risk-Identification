@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Framework" Version="16.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
     <PackageReference Include="Neo4j.Driver" Version="4.3.1" />
     <PackageReference Include="Neo4j.Driver.Simple" Version="4.3.1" />
@@ -23,6 +26,12 @@
   <ItemGroup>
     <ProjectReference Include="..\MachineLearning\MachineLearning.csproj" />
     <ProjectReference Include="..\WpfGraphControl\WpfGraphControl.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

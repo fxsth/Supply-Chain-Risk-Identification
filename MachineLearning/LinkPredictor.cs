@@ -35,8 +35,9 @@ namespace MachineLearning
 
         public void SetData(IEnumerable<SupplyChainLinkFeatures> inputData)
         {
-            _inputData = inputData;
-            _trainingDataView = _mlContext.Data.LoadFromEnumerable(inputData);
+            var supplyChainLinkFeaturesEnumerable = inputData.ToList();
+            _inputData = supplyChainLinkFeaturesEnumerable;
+            _trainingDataView = _mlContext.Data.LoadFromEnumerable(supplyChainLinkFeaturesEnumerable);
         }
 
         public void SetData(IDataView dataView)
@@ -106,16 +107,16 @@ namespace MachineLearning
             return predictedScore.PredictedLinkExistence;
         }
 
-        public Dictionary<(int, int), bool> PredictLinkExistence(
+        public Dictionary<(int, int), PredictedSupplyChainLink> PredictLinkExistences(
             Dictionary<(int, int), SupplyChainLinkFeatures> featuresList)
         {
             PredictionEngine<SupplyChainLinkFeatures, PredictedSupplyChainLink> predictionEngine =
-                _mlContext.Model.CreatePredictionEngine<SupplyChainLinkFeatures, PredictedSupplyChainLink>(_model);
-            Dictionary<(int, int), bool> predictedExistingLinks = new Dictionary<(int, int), bool>();
+                _mlContext.Model.CreatePredictionEngine<SupplyChainLinkFeatures, PredictedSupplyChainLink>(LoadModel());
+            Dictionary<(int, int), PredictedSupplyChainLink> predictedExistingLinks = new Dictionary<(int, int), PredictedSupplyChainLink>();
             foreach (var features in featuresList)
             {
                 PredictedSupplyChainLink predictedScore = predictionEngine.Predict(features.Value);
-                predictedExistingLinks[features.Key] = predictedScore.PredictedLinkExistence;
+                predictedExistingLinks[features.Key] = predictedScore;
             }
 
             return predictedExistingLinks;

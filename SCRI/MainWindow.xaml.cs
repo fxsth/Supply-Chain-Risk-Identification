@@ -29,8 +29,8 @@ namespace SCRI
 
         private string _selectedDatabase;
         private EdgeRoutingSettings _selectedEdgeRoutingSettings;
-        public LayoutAlgorithm SelectedLayoutAlgorithm;
-        public string SelectedNodeLabelFilter;
+        private LayoutAlgorithm _selectedLayoutAlgorithm;
+        private string _selectedNodeLabelFilter;
 
         public MainWindow(IGraphService graphService)
         {
@@ -66,8 +66,8 @@ namespace SCRI
             GraphDatabaseCombobox.Text = _selectedDatabase;
 
             // default layout: MDS
-            SelectedLayoutAlgorithm = LayoutAlgorithm.MDS;
-            LayoutAlgorithmComboBox.Text = SelectedLayoutAlgorithm.ToString();
+            _selectedLayoutAlgorithm = LayoutAlgorithm.MDS;
+            LayoutAlgorithmComboBox.Text = _selectedLayoutAlgorithm.ToString();
             var initialLayoutSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings() { };
             _selectedEdgeRoutingSettings.EdgeRoutingMode = Microsoft.Msagl.Core.Routing.EdgeRoutingMode.Spline;
             initialLayoutSettings.PackingAspectRatio = 7.8;
@@ -79,16 +79,14 @@ namespace SCRI
             initialGraph.Attr.Color = Microsoft.Msagl.Drawing.Color.Transparent;
 
             _graphViewer.Graph = initialGraph;
-
-            NodeSizeDependenceComboBox.ItemsSource =
-                GeneralUtils.enumToStringList(typeof(GraphViewerSettings.NodeSizeDependsOn));
-            NodeSizeDependenceComboBox.Text = _graphViewerSettings.selectedNodeSizeDependence.ToString();
+            
+            NodeSizeDependenceComboBox.Text = _graphViewerSettings.SelectedNodeSizeDependence.ToString();
 
             var listLabels = _graphService.GetLabelsInGraphSchema(_selectedDatabase).ToList();
-            SelectedNodeLabelFilter = "All Labels";
+            _selectedNodeLabelFilter = "All Labels";
             listLabels.Add("All Labels");
             FilterNodeLabelsComboBox.ItemsSource = listLabels;
-            NodeSizeDependenceComboBox.Text = SelectedNodeLabelFilter;
+            FilterNodeLabelsComboBox.Text = _selectedNodeLabelFilter;
         }
 
         private void UpdateGraphLayout(Graph graph)
@@ -128,8 +126,8 @@ namespace SCRI
             if (_graphViewer == null || _graphViewer.Graph == null || e.AddedItems.Count < 1)
                 return;
             Graph graph = _graphViewer.Graph;
-            SelectedLayoutAlgorithm = e.AddedItems[0].As<LayoutAlgorithm>();
-            switch (SelectedLayoutAlgorithm)
+            _selectedLayoutAlgorithm = e.AddedItems[0].As<LayoutAlgorithm>();
+            switch (_selectedLayoutAlgorithm)
             {
                 case LayoutAlgorithm.FastIncremental:
                     graph.LayoutAlgorithmSettings =
@@ -174,7 +172,7 @@ namespace SCRI
                 _selectedDatabase = e.AddedItems[0].ToString();
                 await _graphService.RetrieveGraphFromDatabase(_selectedDatabase);
                 var listLabels = _graphService.GetLabelsInGraphSchema(_selectedDatabase).ToList();
-                SelectedNodeLabelFilter = "All Labels";
+                _selectedNodeLabelFilter = "All Labels";
                 listLabels.Add("All Labels");
                 FilterNodeLabelsComboBox.ItemsSource = listLabels;
                 var graph = _graphViewerSettings.GetMsaglGraph(_selectedDatabase);
@@ -199,8 +197,8 @@ namespace SCRI
         {
             if (e?.AddedItems.Count < 1)
                 return;
-            Enum.TryParse(e.AddedItems[0].ToString(), out GraphViewerSettings.NodeSizeDependsOn nodeSizeDependence);
-            _graphViewerSettings.selectedNodeSizeDependence = nodeSizeDependence;
+            Enum.TryParse(e.AddedItems[0].ToString(), out NodeSizeDependsOn nodeSizeDependence);
+            _graphViewerSettings.SelectedNodeSizeDependence = nodeSizeDependence;
             var graph = _graphViewerSettings.GetMsaglGraph(_selectedDatabase);
             graph.LayoutAlgorithmSettings = _graphViewer.Graph.LayoutAlgorithmSettings;
             graph.Attr = _graphViewer.Graph.Attr;
@@ -209,17 +207,17 @@ namespace SCRI
 
         private async void FilterNodeLabelsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count == 0 || e.AddedItems[0].ToString() == SelectedNodeLabelFilter)
+            if (e.AddedItems.Count == 0 || e.AddedItems[0].ToString() == _selectedNodeLabelFilter)
                 return;
-            SelectedNodeLabelFilter = e.AddedItems[0].ToString();
-            if (SelectedNodeLabelFilter == "All Labels")
+            _selectedNodeLabelFilter = e.AddedItems[0].ToString();
+            if (_selectedNodeLabelFilter == "All Labels")
             {
                 await _graphService.RetrieveGraphFromDatabase(_selectedDatabase);
             }
             else
             {
                 await _graphService.RetrieveGraphFromDatabase(_selectedDatabase,
-                    new List<string> {SelectedNodeLabelFilter});
+                    new List<string> {_selectedNodeLabelFilter});
             }
             _nodePropertiesAndValues = _graphService.GetGraphPropertiesAndValues(_selectedDatabase);
             var graph = _graphViewerSettings.GetMsaglGraph(_selectedDatabase);
@@ -232,47 +230,27 @@ namespace SCRI
         {
             try
             {
-                CurrentStatusLabel.Content = $"Calculating Features...";
-                await _graphService.CalculateLinkFeatures(_selectedDatabase);
-                Dictionary<(int, int), SupplyChainLinkFeatures> featuresList =
-                    _graphService.GetLinkFeatures(_selectedDatabase);
-
-                LinkPredictor linkPredictor = new LinkPredictor();
-                linkPredictor.SetData(featuresList.Values);
-                var modelSchema = linkPredictor.GetModelSchema();
-                string buttonText = LinkPredictionTrainButton.Content.ToString();
-                CurrentStatusLabel.Content = $"Training Data Model...";
-                // This event handler updates the progress bar.
-
-                await Task.Run(() => linkPredictor.TrainModel(180, null));
-                await linkPredictor.SaveTrainingResults();
-                linkPredictor.SaveModel(linkPredictor.GetBestModel());
-                LinkPredictionTrainButton.Content = buttonText;
+                CurrentStatusLabel.Content = $"Calculating Features and training Data Model...";
+                LinkPredictionTrainButton.IsEnabled = false;
+                await _graphService.TrainLinkPredictionOnGivenGraph(_selectedDatabase);
                 CurrentStatusLabel.Content = $"Data Model trained and saved";
+
             }
             catch (Exception ex)
             {
                 CurrentStatusLabel.Content = ex.Message;
             }
+            LinkPredictionTrainButton.IsEnabled = true;
         }
 
         private async void LinkPredictionPredictButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (!_graphService.ExistLinkFeatures(_selectedDatabase))
-                {
-                    CurrentStatusLabel.Content = $"Calculating Link Features first...";
-                    await _graphService.CalculateLinkFeatures(_selectedDatabase);
-                }
-
-                var featuresList = _graphService.GetLinkFeatures(_selectedDatabase);
-
                 CurrentStatusLabel.Content = $"Predicting Links";
                 LinkPredictor linkPredictor = new LinkPredictor();
                 linkPredictor.LoadModel();
-                Dictionary<(int, int), bool> predictedExistingLinks = linkPredictor.PredictLinkExistence(featuresList);
-
+                Dictionary<(int, int), PredictedSupplyChainLink> predictedExistingLinks = await _graphService.ExecuteLinkPredictionOnGivenGraph(_selectedDatabase);
                 _graphViewer.Graph = _graphViewerSettings.AddPredictedLinksToGraph(_graphViewer.Graph,
                     predictedExistingLinks,
                     GraphViewerSettings.ShowPredictedLinks.OnlyAdditionalExisting);

@@ -5,20 +5,28 @@ using SCRI.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MachineLearning.Models;
 using P2 = Microsoft.Msagl.Core.Geometry.Point;
 
 namespace SCRI.Utils
 {
+    public enum NodeSizeDependsOn
+    {
+        None,
+        DegreeCentrality,
+        ClosenessCentrality,
+        BetweennessCentrality
+    }
+
     public class GraphViewerSettings
     {
-        private readonly string _defaultgraph;
-        public NodeSizeDependsOn selectedNodeSizeDependence;
-        private Dictionary<string, Color> NodeLabelColor = new Dictionary<string, Color>();
+        public NodeSizeDependsOn SelectedNodeSizeDependence;
+        private readonly Dictionary<string, Color> _nodeLabelColor = new Dictionary<string, Color>();
         private readonly IGraphStore _graphStore;
         private double? _minScore;
         private double? _maxScore;
 
-        private static string[] ColourValues = new string[]
+        private static readonly string[] ColourValues = new string[]
         {
             "#85D2D6", "#82C95E", "#D5CD81", "#859AD6", "#859AD6", "#895EC9", "#226067",
             "#5A7E2A", "#B4A63C", "#2A7728", "#C18844", "#BAD071", "#91307B", "A83840",
@@ -26,21 +34,8 @@ namespace SCRI.Utils
             "#F39C12", "#2980B9", "#7DCEA0", "#3498DB", "#ECF0F1", "#16A085", "#D35400",
             "#27AE60", "#86402D", "#54521C", "#1B5039", "#1B2E50", "#C34B51"
         };
-
-        public GraphViewerSettings(IGraphStore graphStore)
-        {
-            _graphStore = graphStore;
-            _defaultgraph = _graphStore.defaultGraph;
-        }
-
-        public enum NodeSizeDependsOn
-        {
-            None,
-            DegreeCentrality,
-            ClosenessCentrality,
-            BetweennessCentrality
-        }
-
+        
+        
         public enum ShowPredictedLinks
         {
             OnlyAdditionalExisting,
@@ -48,14 +43,19 @@ namespace SCRI.Utils
             AllNonExisting
         }
 
-        public void AssignColorsToLabels(IEnumerable<string> labels)
+        public GraphViewerSettings(IGraphStore graphStore)
         {
-            for (int i = 0; i < labels.Count(); i++)
+            _graphStore = graphStore;
+        }
+
+        private void AssignColorsToLabels(IEnumerable<string> labels)
+        {
+            var enumerable = labels.ToList();
+            for (int i = 0; i < enumerable.Count(); i++)
             {
-                Random rnd = new Random();
                 var color = System.Drawing.ColorTranslator
                     .FromHtml(ColourValues[i]); // rnd.Next(ColourValues.Length-1)]);
-                NodeLabelColor[labels.ElementAt(i)] = new Color(color.R, color.G, color.B);
+                _nodeLabelColor[enumerable.ElementAt(i)] = new Color(color.R, color.G, color.B);
             }
         }
 
@@ -63,7 +63,7 @@ namespace SCRI.Utils
         {
             if (label == null)
                 return Color.White;
-            return NodeLabelColor[label];
+            return _nodeLabelColor[label];
         }
 
         private void PrepareNodeSizeNormalization(string graphname)
@@ -74,9 +74,9 @@ namespace SCRI.Utils
                 {NodeSizeDependsOn.ClosenessCentrality, "closeness"},
                 {NodeSizeDependsOn.BetweennessCentrality, "betweenness"}
             };
-            if (!dict.ContainsKey(selectedNodeSizeDependence))
+            if (!dict.ContainsKey(SelectedNodeSizeDependence))
                 return;
-            string scoreProperty = dict[selectedNodeSizeDependence];
+            string scoreProperty = dict[SelectedNodeSizeDependence];
             var graph = _graphStore.GetGraph(graphname);
             _minScore = null;
             _maxScore = null;
@@ -96,7 +96,7 @@ namespace SCRI.Utils
             if (_minScore is null || _maxScore is null || _maxScore == 0)
                 return nodesize;
             double range = (double) (_maxScore - _minScore);
-            switch (selectedNodeSizeDependence)
+            switch (SelectedNodeSizeDependence)
             {
                 case NodeSizeDependsOn.None:
                     break;
@@ -137,7 +137,7 @@ namespace SCRI.Utils
                 n.Attr.Shape = Shape.Circle;
                 n.NodeBoundaryDelegate = x => CustomCircleNodeBoundaryCurve(x, CentralityMeasureToNodeSize(vertex));
             }
-            foreach (var edge in supplyNetwork.Edges?? new List<SupplierRelationship>())
+            foreach (var edge in supplyNetwork.Edges)
             {
                 var e = graph.AddEdge(edge.Source.ID.ToString(), edge.Target.ID.ToString());
             }
@@ -145,25 +145,27 @@ namespace SCRI.Utils
             return graph;
         }
 
-        public Graph AddPredictedLinksToGraph(Graph graph, Dictionary<(int, int), bool> predictedExistingLinks,
+        public Graph AddPredictedLinksToGraph(Graph graph, Dictionary<(int, int), PredictedSupplyChainLink> predictedExistingLinks,
             ShowPredictedLinks showPredictedLinks)
         {
             List<(int, int)> edges =
                 graph.Edges.Select(edge => (Convert.ToInt32(edge.Source), Convert.ToInt32(edge.Target))).ToList();
-            IEnumerable<(int, int)> addedLinksToGraph = predictedExistingLinks.Keys;
+            // Remove node pair duplicate (a,b) == (b,a)
+            var deduplicatedPredictingLinks = DeduplicateNodePairs(predictedExistingLinks);
+            IEnumerable<(int, int)> addedLinksToGraph = deduplicatedPredictingLinks.Keys;
             Color edgeColor = Color.Green;
             switch (showPredictedLinks)
             {
                 case ShowPredictedLinks.AllNonExisting:
-                    addedLinksToGraph = predictedExistingLinks.Where(exists => !exists.Value).Select(x => x.Key);
+                    addedLinksToGraph = deduplicatedPredictingLinks.Where(exists => !exists.Value.PredictedLinkExistence).Select(x => x.Key);
                     edgeColor = Color.Red;
                     break;
                 case ShowPredictedLinks.AllExisting:
-                    addedLinksToGraph = predictedExistingLinks.Where(exists => exists.Value).Select(x => x.Key);
+                    addedLinksToGraph = deduplicatedPredictingLinks.Where(exists => exists.Value.PredictedLinkExistence).Select(x => x.Key);
                     edgeColor = Color.Green;
                     break;
                 case ShowPredictedLinks.OnlyAdditionalExisting:
-                    addedLinksToGraph = predictedExistingLinks.Where(exists => exists.Value).Select(x => x.Key)
+                    addedLinksToGraph = deduplicatedPredictingLinks.Where(exists => exists.Value.PredictedLinkExistence).Select(x => x.Key)
                         .Where(x => !edges.Contains(x) && !edges.Contains((x.Item2, x.Item1)));
                     edgeColor = Color.Green;
                     break;
@@ -184,6 +186,22 @@ namespace SCRI.Utils
         private static ICurve CustomCircleNodeBoundaryCurve(Node node, double radius)
         {
             return CurveFactory.CreateEllipse(radius, radius, new P2(0, 0));
+        }
+
+        private static Dictionary<(int, int), PredictedSupplyChainLink> DeduplicateNodePairs(Dictionary<(int, int), PredictedSupplyChainLink> predictedSupplyChainLinks)
+        {
+            Dictionary<(int, int), PredictedSupplyChainLink> deduplicatedLinks =
+                new Dictionary<(int, int), PredictedSupplyChainLink>();
+            foreach (var nodePair in predictedSupplyChainLinks)
+            {
+                var sortedPair = (Math.Min(nodePair.Key.Item1, nodePair.Key.Item2),
+                    Math.Max(nodePair.Key.Item1, nodePair.Key.Item2));
+                if (!deduplicatedLinks.ContainsKey(sortedPair) || deduplicatedLinks.ContainsKey(sortedPair) &&
+                    deduplicatedLinks[sortedPair] == null)
+                    deduplicatedLinks[sortedPair] = nodePair.Value;
+            }
+
+            return deduplicatedLinks;
         }
 
         private static ICurve GetCustomNodeBoundaryCurve(Node node, double width, double height)
