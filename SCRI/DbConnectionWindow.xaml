@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SCRI"
         mc:Ignorable="d"
-        Title="DbConnectionWindow" Height="450" Width="400">
+        Title="Connect to Graph Database" Height="450" Width="400">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="177*"/>
