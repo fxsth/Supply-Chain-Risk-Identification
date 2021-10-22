@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MachineLearning.Models;
+using SCRI.Exceptions;
 using P2 = Microsoft.Msagl.Core.Geometry.Point;
 
 namespace SCRI.Utils
@@ -131,6 +132,8 @@ namespace SCRI.Utils
             PrepareNodeSizeNormalization(graphName);
             foreach (var vertex in supplyNetwork.Vertices)
             {
+                if (!vertex.Label.Any())
+                    throw new InvalidGraphElementException($"Node {vertex.ToString()} does not have Label");
                 var n = graph.AddNode(vertex.ID.ToString());
                 n.LabelText = vertex.ToString();
                 n.Attr.FillColor = GetLabelColor(vertex.Label.First());

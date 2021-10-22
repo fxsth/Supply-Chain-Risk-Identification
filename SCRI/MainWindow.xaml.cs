@@ -52,7 +52,6 @@ namespace SCRI
             _graphViewer.ObjectUnderMouseCursorChanged += OnObjectUnderMouseCursorChanged;
 
             await InitialGraphVisualization();
-            //ViewGraphPanel.LayoutUpdated += updateGraph;
         }
 
         private async Task InitialGraphVisualization()
@@ -184,7 +183,7 @@ namespace SCRI
             }
             catch (Exception ex)
             {
-                // ignored
+                CurrentStatusLabel.Content = ex.Message;
             }
         }
 

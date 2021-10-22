@@ -38,13 +38,20 @@ namespace SCRI
          
         private async void onClickConnectAsync(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(txtURL.Text) || string.IsNullOrEmpty(txtUsername.Text) || string.IsNullOrEmpty(txtPassword.Text))
+            if (string.IsNullOrEmpty(txtURL.Text) || string.IsNullOrEmpty(txtUsername.Text))
             {
                 TextBlockStatus.Text = "Missing data to connect";
                 return;
             }
             _driverFactory.URI = txtURL.Text;
-            _driverFactory.AuthToken = AuthTokens.Basic(txtUsername.Text, txtPassword.Text);
+            if (string.IsNullOrEmpty(txtPassword.Text))
+            {
+                _driverFactory.AuthToken = AuthTokens.None;
+            }
+            else
+            {
+                _driverFactory.AuthToken = AuthTokens.Basic(txtUsername.Text, txtPassword.Text);
+            }
             try
             {
                 using (IDriver driver = _driverFactory.CreateDriver())
@@ -57,6 +64,7 @@ namespace SCRI
                         TextBlockStatus.Text = "Connected";
                         MainWindow mainWindow = _serviceProvider.GetService<MainWindow>();
                         mainWindow.Show();
+                        this.Close();
                     }
                 }
             }

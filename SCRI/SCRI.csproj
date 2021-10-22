@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Properties" />
     <Folder Include="Properties\" />
   </ItemGroup>
 
@@ -32,6 +33,14 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="icon.ico.ico" />
   </ItemGroup>
 
 </Project>

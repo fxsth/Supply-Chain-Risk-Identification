@@ -27,7 +27,7 @@
         </ObjectDataProvider>
     </Window.Resources>
 
-    <Grid x:Name="MainGrid" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+    <Grid x:Name="MainGrid" Background="White">
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -36,42 +36,43 @@
 
         <Grid.RowDefinitions>
             <RowDefinition Height="40" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="40" />
+            <RowDefinition />
+            <RowDefinition Height="25" />
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
-            <Label Margin ="5" Content="Select Graph from Database" />
+
+        <DockPanel Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" ClipToBounds="true" Name="ViewGraphPanel" Background="White"/>
+
+
+        <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" UseLayoutRounding="False" Width="500" HorizontalAlignment="Left">
+            <Label Content="Select Graph from Database" HorizontalAlignment="Center" VerticalAlignment="Center" />
             <ComboBox Margin ="5" Width="300" Name="GraphDatabaseCombobox" SelectionChanged="GraphDatabaseCombobox_SelectionChangedAsync" DropDownOpened="GraphDatabaseCombobox_DropDownOpened"/>
         </StackPanel>
-
-        <DockPanel Grid.Column="0" Grid.Row="1" ClipToBounds="true" Name="ViewGraphPanel"/>
+        
         <ScrollViewer Grid.Column="1" Grid.RowSpan="3" DockPanel.Dock="Right">
-            <StackPanel Orientation="Vertical" Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}">
+            <StackPanel Orientation="Vertical" Background="#FFE2E2E2">
                 <StackPanel Orientation="Horizontal">
-                    <Label  Width="150" Margin="5" Content="Graph Layout"/>
+                    <Label  Width="130" Margin="5" Content="Graph Layout"/>
                     <ComboBox  Margin="5" x:Name="LayoutAlgorithmComboBox"
-                    Width="100"
+                    Width="130"
                     ItemsSource="{Binding Source={StaticResource dataFromEnumLayoutAlgorithm}}" SelectionChanged="LayoutAlgorithmComboBox_SelectionChanged"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <Label Width="150" Margin="5" Content="Node size depends on"/>
-                    <ComboBox  Margin="5" x:Name="NodeSizeDependenceComboBox" Width="100" 
+                    <Label Width="130" Margin="5" Content="Node size depends on"/>
+                    <ComboBox  Margin="5" x:Name="NodeSizeDependenceComboBox" Width="130" 
                                ItemsSource="{Binding Source={StaticResource dataFromEnumNodeSize}}"
                                SelectionChanged="NodeSizeDependenceComboBox_SelectionChanged"/>
                 </StackPanel>
-                <Separator/>
                 <StackPanel Orientation="Horizontal">
-                    <Label Width="150" Margin="5" Content="Filter node labels"/>
-                    <ComboBox  Margin="5" x:Name="FilterNodeLabelsComboBox" Width="100" SelectionChanged="FilterNodeLabelsComboBox_SelectionChanged"/>
+                    <Label Width="130" Margin="5" Content="Filter node labels"/>
+                    <ComboBox  Margin="5" x:Name="FilterNodeLabelsComboBox" Width="130" SelectionChanged="FilterNodeLabelsComboBox_SelectionChanged"/>
                 </StackPanel>
                 <Separator/>
                 <StackPanel Orientation="Horizontal">
-                    <Button Margin="5" x:Name="LinkPredictionTrainButton" Content="Start Link Prediction Training" Click="LinkPredictionTrainButton_Click"></Button>
+                    <Button Margin="5" x:Name="LinkPredictionTrainButton" Content="Start Link Prediction Training" Click="LinkPredictionTrainButton_Click" Width="160"/>
                 </StackPanel>
-                <Separator/>
                 <StackPanel Orientation="Horizontal">
-                    <Button Margin="5" x:Name="LinkPredictionPredictButton" Content="Predict not-visible Links" Click="LinkPredictionPredictButton_Click"></Button>
+                    <Button Margin="5" x:Name="LinkPredictionPredictButton" Content="Predict not-visible Links" Click="LinkPredictionPredictButton_Click" Width="160"/>
                 </StackPanel>
                 <Separator/>
                 <ItemsControl Name="NodePropertiesItemsControl">

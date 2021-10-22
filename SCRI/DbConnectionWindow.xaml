@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SCRI"
         mc:Ignorable="d"
-        Title="Connect to Graph Database" Height="450" Width="400">
+        Title="Connect to Graph Database" Height="350" Width="400">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="177*"/>
@@ -25,32 +25,26 @@
             </Grid.ColumnDefinitions>
 
 
-            <Border Grid.RowSpan="2" Grid.ColumnSpan="4">
-                <Border.Background>
-                    <LinearGradientBrush>
-                        <GradientStop Color="AliceBlue" Offset="0.0"/>
-                    </LinearGradientBrush>
-                </Border.Background>
-            </Border>
+            <Border Grid.RowSpan="2" Grid.ColumnSpan="4" Background="#FFEDEDED"/>
 
             <Label Grid.ColumnSpan="3" FontSize="18" HorizontalAlignment="Left" 
                 VerticalAlignment="Center" Height="34" Margin="73,0,0,0" Grid.Column="1">Connect to Graph Database</Label>
             <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
-                <Label Margin="10,10,10,5" HorizontalAlignment="Right">Database</Label>
+                <Label Margin="10,10,10,5" HorizontalAlignment="Right" HorizontalContentAlignment="Left">Database</Label>
                 <Label Margin="10,5,10,5" HorizontalAlignment="Right">URL</Label>
                 <Label Margin="10,5,10,5" HorizontalAlignment="Right">Username</Label>
                 <Label Margin="10,5,10,5" HorizontalAlignment="Right">Password</Label>
                 <Label Margin="10,10,10,10" HorizontalAlignment="Right">Status</Label>
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2">
-                <ComboBox x:Name="cbbDatabase" Margin="10,10,10,10" HorizontalAlignment="Left" Width="200" SelectedIndex="0">
+                <ComboBox x:Name="cbbDatabase" Margin="10,10,10,10" HorizontalAlignment="Left" Width="200" SelectedIndex="0" HorizontalContentAlignment="Left">
                     <ComboBoxItem Content="Neo4J"/>
                 </ComboBox>
                 <TextBox Margin="10,10,10,10" x:Name="txtURL" Text="neo4j://localhost:7687"></TextBox>
                 <TextBox Margin="10,10,10,10" x:Name="txtUsername" Text="neo4j"></TextBox>
                 <TextBox Margin="10,10,10,10" x:Name="txtPassword" Text="1"/>
                 <TextBlock x:Name="TextBlockStatus" Margin="10,10,10,5" HorizontalAlignment="Left" Height="58" Width="279" TextWrapping="WrapWithOverflow">Not connected</TextBlock>
-                <Button x:Name="btnConnect" Margin="10,5,10,5" Click="onClickConnectAsync" >Connect</Button>
+                <Button x:Name="btnConnect" Margin="10,5,10,5" Click="onClickConnectAsync" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" >Connect</Button>
             </StackPanel>
         </Grid>
     </Grid>
