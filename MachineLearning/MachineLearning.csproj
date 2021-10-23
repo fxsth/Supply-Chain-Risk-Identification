@@ -8,5 +8,10 @@
     <PackageReference Include="Microsoft.ML" Version="1.6.0" />
     <PackageReference Include="Microsoft.ML.AutoML" Version="0.18.0" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ContentWithTargetPath Include="Machine Learning Results\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>%(RecursiveDir)\Machine Learning Results\%(Filename)%(Extension)</TargetPath>
+    </ContentWithTargetPath>
+  </ItemGroup>
 </Project>

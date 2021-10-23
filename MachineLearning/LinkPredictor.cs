@@ -24,6 +24,7 @@ namespace MachineLearning
         private DataViewSchema _modelSchema;
         private ITransformer _model;
         private ExperimentResult<BinaryClassificationMetrics> _experimentResult;
+        private BinaryExperimentSettings _binaryExperimentSettings;
 
         public LinkPredictor()
         {
@@ -40,16 +41,16 @@ namespace MachineLearning
             _trainingDataView = _mlContext.Data.LoadFromEnumerable(supplyChainLinkFeaturesEnumerable);
         }
 
-        public void SetData(IDataView dataView)
-        {
-            _trainingDataView = dataView;
-        }
-
         public void TrainModel(uint experimentTimeSeconds,
             IProgress<RunDetail<BinaryClassificationMetrics>> progressHandler)
         {
+            _binaryExperimentSettings = new BinaryExperimentSettings()
+            {
+                OptimizingMetric = BinaryClassificationMetric.F1Score,
+                MaxExperimentTimeInSeconds = experimentTimeSeconds
+            };
             _experimentResult = _mlContext.Auto()
-                .CreateBinaryClassificationExperiment(experimentTimeSeconds)
+                .CreateBinaryClassificationExperiment(_binaryExperimentSettings)
                 .Execute(_trainingDataView, progressHandler: progressHandler);
         }
 
@@ -67,6 +68,11 @@ namespace MachineLearning
             
             foreach (var runDetail in _experimentResult.RunDetails)
             {
+                if (runDetail.Model == _experimentResult.BestRun.Model)
+                {
+                    lines.Add("----------------------------------------------");
+                    lines.Add("------------Best Run:-------------");
+                }    
                 lines.Add("----------------------------------------------");
                 lines.Add($"Model trained with: {runDetail.TrainerName}");
                 lines.Add($"Training runtime in seconds: {runDetail.RuntimeInSeconds}");
@@ -83,6 +89,18 @@ namespace MachineLearning
             lines.Add("----------------------------------------------");
             lines.Add("----------------------------------------------");
             lines.Add($"Best Run is: {_experimentResult.BestRun.TrainerName}");
+            lines.Add("----------------------------------------------");
+            lines.Add($"Model trained with: {_experimentResult.BestRun.TrainerName}");
+            lines.Add($"Training runtime in seconds: {_experimentResult.BestRun.RuntimeInSeconds}");
+            lines.Add($"Accuracy: {_experimentResult.BestRun.ValidationMetrics.Accuracy}");
+            lines.Add($"F1Score: {_experimentResult.BestRun.ValidationMetrics.F1Score}");
+            lines.Add($"AreaUnderRocCurve: {_experimentResult.BestRun.ValidationMetrics.AreaUnderRocCurve}");
+            lines.Add($"PositiveRecall: {_experimentResult.BestRun.ValidationMetrics.PositiveRecall}");
+            lines.Add($"NegativeRecall: {_experimentResult.BestRun.ValidationMetrics.NegativeRecall}");
+            lines.Add($"PositivePrecision: {_experimentResult.BestRun.ValidationMetrics.PositivePrecision}");
+            lines.Add($"NegativePrecision: {_experimentResult.BestRun.ValidationMetrics.NegativePrecision}");
+            lines.Add(_experimentResult.BestRun.ValidationMetrics.ConfusionMatrix.GetFormattedConfusionTable());
+
 
             await File.WriteAllLinesAsync(ResultsFilePath, lines);
         }
