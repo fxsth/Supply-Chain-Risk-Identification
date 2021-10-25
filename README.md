@@ -12,7 +12,7 @@ Analytische Fähigkeiten werden eingebunden durch:
 ___
 ### Vorbereitung
 Benötigt wird eine (lokal oder remote) erreichbare Neo4j-Instanz.
-* Getestet wurde mit einem lokalen Instanz von Neo4j Desktop 1.4.8
+* Getestet wurde mit einer lokalen Instanz von Neo4j Desktop 1.4.8
 * Das Plugin Graph Data Science Library muss installiert sein. (Getestet mit Version 1.7.0)
 * Unter einem erstellten und laufenden DBMS lassen sich Datenbanken hinzufügen.
 * Es empfiehlt sich, eine Datenbank pro Netzwerk zu verwenden.
@@ -23,4 +23,4 @@ Benötigt wird eine (lokal oder remote) erreichbare Neo4j-Instanz.
   * Mehrstufige Supply Chain in der Maschinenbaubranche nach [Willems (2007)](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.670.481&rep=rep1&type=pdf). Ebenfalls unter SCRI/Database/Database Creation Queries zu finden.
 ### Starten der Anwendung
 Über das Fenster zur Verbindung mit dem Datenbanksystem lassen sich Adresse, sowie Benutzername und Passwort eingeben.
-Bei erfolgreicher Verbindung öffnet sich das Hauptfenster und der Visalisierung des in Neo4j als Standard eingestellten Graphen.
+Bei erfolgreicher Verbindung öffnet sich das Hauptfenster mit der Visalisierung des in Neo4j als Standard eingestellten Graphen.
