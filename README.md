@@ -21,6 +21,8 @@ Benötigt wird eine (lokal oder remote) erreichbare Neo4j-Instanz.
     >:play northwind graph
   * Supply Network einer Honda Accord Mittelkonsole nach [Choi & Hong (2002)](https://asu.pure.elsevier.com/en/publications/unveiling-the-structure-of-supply-networks-case-studies-in-honda-). Cypher-Anweisungen sind unter SCRI/Database/Database Creation Queries zu finden.
   * Mehrstufige Supply Chain in der Maschinenbaubranche nach [Willems (2007)](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.670.481&rep=rep1&type=pdf). Ebenfalls unter SCRI/Database/Database Creation Queries zu finden.
+  
+
 ![Beispiel Neo4j](./figures/screenshot-neo4j.png)
 ### Starten der Anwendung
 Über das Fenster zur Verbindung mit dem Datenbanksystem lassen sich Adresse, sowie Benutzername und Passwort eingeben.
